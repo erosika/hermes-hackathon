@@ -87,7 +87,18 @@ big flagships, too large to self-host             →  proxy://nous,
 
 Deciding factors: **guardrails** (uncensored ⇒ can't proxy through corporate, self-host it) and **who already hosts it** (already on OpenRouter ⇒ proxy, don't burn Spark memory). The ascii/art wonders are the Spark's reason to exist; everything commodity gets proxied so all 23 are invokable day one.
 
-- **Spark = primary self-host.** Esoteric/ascii wonders are small (7–8B ≈ 8GB at FP8); ~10–14 sit resident in 128GB, the long tail pages in on first call. Served by Ollama (`/v1`-compatible, auto-load), exposed to the Fly gateway over Tailscale as `gpu://spark/<id>`.
+- **Spark = primary self-host, two lanes.** The Spark is one GB10 (128GB unified, **~273 GB/s bandwidth** — token gen is bandwidth-bound, so single-stream speed is set by model size). To get *both* lightning + breadth off one box, split the runtime:
+
+```
+LANE             RUNTIME  HOSTS                 SPEED            CONCURRENCY
+───────────────  ───────  ────────────────────  ───────────────  ─────────────
+gpu://spark      vLLM     a few pinned 1-3B      ~90-120 tok/s    16-32 snappy
+                 (hot)    lightning finetunes    (lightning)      (64+ degrades)
+gpu://sparktail  Ollama   the long tail, paged   ~25-55 tok/s     ~4-8 / model
+                 (breadth) in on first call      + cold-start     (1-3 loaded)
+```
+
+  vLLM's continuous batching is why concurrency is a *strength*: at batch=1 the GB10's compute sits idle, so it packs many streams and aggregate throughput climbs into the hundreds of tok/s. Lightning lane stays at 1–3B (Qwen2.5-3B / Llama-3.2-3B / Gemma-2-2B class, quantized). Both lanes exposed to the Fly gateway over Tailscale; `hermetika` fails a saturated lane over to `gpu://brev`.
 - **Brev = paid burst + the spend side. Access confirmed** (`eri-e0bbf8-sqdj`, Add Credits live in console). Same router interface as Spark (`gpu://brev/<id>`); Modal stays as a fallback adapter. This is what the steward actually buys.
 - **The Hermes agent runs ops** (not NemoClaw). The steward is a Hermes agent with skills; its autonomous top-up actions are Hermes skill invocations. We build on the agent platform the hackathon hands us, end to end.
 - **Stripe Skills credits → Brev "Add Credits"** is the literal survival loop: steward earns via Stripe, spends via Stripe Skills to top up the same Brev account hosting the weights. Closed P&L on one screen.
@@ -104,7 +115,7 @@ LAYER          CHOICE                          NOTE
 frontend       Vite + React + TS               techo-digital × Hermes, liquid metal
 backend        Elysia on Bun                   OpenAI-compatible gateway
 self-host GPU  DGX Spark (owned) · Brev burst   whole esoteric set on Spark/Tailscale
-spark runtime  Ollama (OpenAI-compat /v1)       auto-load, ~10-14 resident
+spark runtime  vLLM (hot lane) + Ollama (tail)  fast 1-3B pinned · breadth paged
 proxy          OpenRouter · NVIDIA build · Nous community distills + flagships
 agent / ops    Hermes agent (Honcho peers)     2 for MVP: hermetika + steward
 sessions       Honcho                          chat sessions + turns for talk-to-models
@@ -132,6 +143,9 @@ No Next.js.
 │  ├ /v1/chat/completions   inference gateway          │
 │  ├ /api/models            registry                   │
 │  ├ /api/profiles          hermes operators           │
+│  ├ /api/backends          live health (failover)     │
+│  ├ /api/ledger            survival P&L + float        │
+│  ├ /api/steward           top-up decision            │
 │  ├ /api/billing/*         stripe + webhooks          │
 │  └ /api/export            manifest download          │
 │                                                      │
