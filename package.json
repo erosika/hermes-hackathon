@@ -1,0 +1,11 @@
+{
+  "name": "hermetika",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "dev:server": "bun run --filter './apps/server' dev",
+    "dev:web": "bun run --filter './apps/web' dev"
+  }
+}

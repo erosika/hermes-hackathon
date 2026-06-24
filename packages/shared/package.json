@@ -1,0 +1,5 @@
+{
+  "name": "@hermetika/shared",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" }
+}
