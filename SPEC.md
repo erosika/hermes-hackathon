@@ -49,26 +49,50 @@ Each profile reasons over Honcho memory (its own peer + a shared session) and ac
 
 ## NVIDIA layer
 
-NVIDIA shows up in two real, non-gimmick places:
+NVIDIA shows up in three real, non-gimmick places — and the strongest one is **owned hardware, not a rental**:
 
 ```
 WHERE                  HOW                                         WHY IT COUNTS
 ─────────────────────  ──────────────────────────────────────────  ───────────────────────
-self-host GPU          NVIDIA Brev (brev.dev) — NVIDIA's Modal-     "we host esoteric weights"
-                       equivalent GPU cloud. launchables serve      is literally true; uses
-                       1–2 esoteric finetunes behind the router.    NVIDIA's own stack.
-proxied pantheon       build.nvidia.com hosted API (OpenAI-compat)  Nemotron / Nous models in
-                       → drops straight in as a proxy provider.     the pantheon, zero hosting.
-                       Nemotron 3 Ultra + others as registry rows.
+self-host (owned)      DGX Spark on Eri's network (~128GB unified)  the WHOLE esoteric pantheon
+                       serves the whole esoteric set via Ollama,    runs on owned NVIDIA silicon
+                       OpenAI-compat, reached over Tailscale.       in her apartment. sovereignty.
+                       ~10-14 small finetunes resident, tail paged. the hero shot.
+self-host (paid burst) NVIDIA Brev (brev.dev) — elastic GPU cloud  the survival-loop SPEND side:
+                       the agent pays for when the Spark saturates  the agent buys NVIDIA compute
+                       or a model needs more than the Spark has.    with money it earned.
+proxied flagships      build.nvidia.com hosted API (OpenAI-compat)  Nemotron 3 Ultra + Hermes 4 —
+                       → flagships too big to self-host, zero       huge + already hosted well.
+                       hosting, drop in as proxy rows.              no reason to own them.
 ```
 
-The agent ops layer is **the Hermes agent itself** — not NemoClaw. Hermes is already self-improving + sandboxed + persistent-memory by design; that's the platform we're told to build on. The steward's skills and Stripe top-ups run as Hermes skills. NVIDIA's contribution is the *compute the agent hosts on and pays for*, which is the cleaner, more honest story anyway.
+The agent ops layer is **the Hermes agent itself** — not NemoClaw. Hermes is already self-improving + sandboxed + persistent-memory by design; that's the platform we're told to build on. The steward's skills and Stripe top-ups run as Hermes skills.
 
-- **Brev = the Modal slot. Access confirmed** (`eri-e0bbf8-sqdj`, GPU environments + Add Credits live in console). Default the self-host backend to Brev launchables; keep Modal as the fallback adapter (same router interface). One env flag picks the GPU provider.
+**The split that keeps the survival loop honest:** the Spark is the *owned temple* (free marginal cost — the sovereignty/curation showcase). The agent's real recurring spend is **Brev burst + proxy API credits (Nous / NVIDIA build / OpenRouter)**. Customer pays Stripe → steward tops up Brev/API → pantheon stays lit. Owned floor, paid ceiling.
+
+**Placement rule (how `curator` decides where a model lives):**
+
+```
+MODEL CHARACTER                                   →  BACKEND
+────────────────────────────────────────────────  ──────────────────────
+bespoke ascii / art / glyph / visual wonders      →  gpu://spark   (owned)
+  (small, the curated showcase)
+no-guardrail / uncensored finetunes               →  gpu://spark or
+  (corporate APIs refuse them → must own weights)     gpu://brev (burst)
+community distills already hosted                 →  proxy://openrouter
+  (gemma derivs, qwen distills e.g. "qwable")        (zero hosting, instant)
+big flagships, too large to self-host             →  proxy://nous,
+  (Hermes 4, Nemotron 3 Ultra)                        proxy://nvidia
+```
+
+Deciding factors: **guardrails** (uncensored ⇒ can't proxy through corporate, self-host it) and **who already hosts it** (already on OpenRouter ⇒ proxy, don't burn Spark memory). The ascii/art wonders are the Spark's reason to exist; everything commodity gets proxied so all 23 are invokable day one.
+
+- **Spark = primary self-host.** Esoteric/ascii wonders are small (7–8B ≈ 8GB at FP8); ~10–14 sit resident in 128GB, the long tail pages in on first call. Served by Ollama (`/v1`-compatible, auto-load), exposed to the Fly gateway over Tailscale as `gpu://spark/<id>`.
+- **Brev = paid burst + the spend side. Access confirmed** (`eri-e0bbf8-sqdj`, Add Credits live in console). Same router interface as Spark (`gpu://brev/<id>`); Modal stays as a fallback adapter. This is what the steward actually buys.
 - **The Hermes agent runs ops** (not NemoClaw). The steward is a Hermes agent with skills; its autonomous top-up actions are Hermes skill invocations. We build on the agent platform the hackathon hands us, end to end.
 - **Stripe Skills credits → Brev "Add Credits"** is the literal survival loop: steward earns via Stripe, spends via Stripe Skills to top up the same Brev account hosting the weights. Closed P&L on one screen.
 - **NVIDIA NIM** optional: if a self-hosted model ships as a NIM microservice, the router just treats it as another `gpu://` backend.
-- **DGX Spark** — the prize + the narrative ("an agent that earns enough to run on its own NVIDIA hardware"). Not a build dependency.
+- **DGX Spark — owned, on-network, a real build dependency.** It hosts the pantheon now; it's also the prize, so the narrative folds in on itself: "an agent already running its temple on a DGX Spark, earning enough to keep it fed — give it a second one." Demo-readiness over Tailscale is the one risk to derisk early (D5).
 
 ---
 
@@ -79,8 +103,9 @@ LAYER          CHOICE                          NOTE
 ─────────────  ──────────────────────────────  ──────────────────────────
 frontend       Vite + React + TS               techo-digital × Hermes, liquid metal
 backend        Elysia on Bun                   OpenAI-compatible gateway
-self-host GPU  NVIDIA Brev (Modal fallback)    1–2 esoteric models
-proxy          NVIDIA build · Nous · OpenRouter rest of the 23
+self-host GPU  DGX Spark (owned) · Brev burst   whole esoteric set on Spark/Tailscale
+spark runtime  Ollama (OpenAI-compat /v1)       auto-load, ~10-14 resident
+proxy          OpenRouter · NVIDIA build · Nous community distills + flagships
 agent / ops    Hermes agent (Honcho peers)     2 for MVP: hermetika + steward
 sessions       Honcho                          chat sessions + turns for talk-to-models
 memory         Honcho                          one peer per profile (operator memory)
@@ -111,21 +136,22 @@ No Next.js.
 │  └ /api/export            manifest download          │
 │                                                      │
 │  ROUTER ── per-model backend resolution              │
-│    gpu://brev/oracle-07    ─┐                          │
-│    gpu://modal/scarab      ─┼─► dispatch              │
+│    gpu://spark/oracle-07   ─┐  (owned, tailscale)     │
+│    gpu://spark/scarab      ─┼─► dispatch              │
+│    gpu://brev/<burst>      ─┤  (paid, elastic)        │
 │    proxy://nvidia/nemotron ─┤                          │
-│    proxy://nous/hermes-4   ─┤                          │
-│    proxy://openrouter/*    ─┘                          │
+│    proxy://nous/hermes-4   ─┘                          │
 └───┬───────────┬───────────┬───────────┬───────────────┘
     │           │           │           │
-┌─ GPU ────┐ ┌─ SUPABASE ┐ ┌─ STRIPE ─┐ ┌─ HONCHO + HERMES ───────┐
-│ Brev /   │ │ pg + auth │ │ subs     │ │ peers: hermetika·steward │
-│ Modal    │ │ registry  │ │ skills   │ │ sessions: user↔model chat│
-│ 1–2 wts  │ │ ledger    │ └────┬─────┘ │ memory: operator peers   │
-└──────────┘ └───────────┘      │       │ Hermes agent runs ops    │
-                                │       └───────────┬──────────────┘
-                                └── top-up ◄─────────┘
-                          steward reads ledger → Stripe Skills buys compute
+┌─ GPU ─────────┐ ┌─ SUPABASE ┐ ┌─ STRIPE ─┐ ┌─ HONCHO + HERMES ───────┐
+│ Spark (owned) │ │ pg + auth │ │ subs     │ │ peers: hermetika·steward │
+│  whole        │ │ registry  │ │ skills   │ │ sessions: user↔model chat│
+│  esoteric set │ │ ledger    │ └────┬─────┘ │ memory: operator peers   │
+│ Brev (paid    │ └───────────┘      │       │ Hermes agent runs ops    │
+│  burst) ◄─────┼────────────────────┘       └───────────┬──────────────┘
+└───────────────┘   top-up                               │
+        ▲           steward reads ledger → Stripe Skills buys Brev/API ◄┘
+        └─ Tailscale: gpu://spark/* served by Ollama on the DGX Spark
 ```
 
 ---
@@ -178,12 +204,13 @@ shares          id, model_id, manifest_jsonb, slug, created_by
 One OpenAI-compatible surface: `POST /v1/chat/completions` with `model: <slug>`.
 
 - Resolve slug → `models.backend` + `backend_ref`.
-- `gpu://provider/id` → call the Brev (or Modal) web endpoint for that model.
+- `gpu://spark/id` → call Ollama's `/v1/chat/completions` on the Spark over Tailscale.
+- `gpu://brev/id` → call the Brev (or Modal) web endpoint when a model needs paid burst.
 - `proxy://provider/id` → forward with key from env, normalize stream.
-- Stream SSE back unchanged. Meter tokens → write `usage` + `ledger(spend)`.
-- `hermes.ops` owns failover: if a `gpu://` backend is down, route to its proxy twin and flag it.
+- Stream SSE back unchanged. Meter tokens → write `usage` + `ledger(spend)` (spend = 0 for `spark`, real for `brev`/`api` — keeps the P&L honest).
+- `hermetika` owns failover: if `gpu://spark` is saturated/down, route that model to `gpu://brev` burst (or its proxy twin) and flag it.
 
-Self-host target: 1–2 genuinely esoteric models (an ASCII/art finetune, a visual model) on **Brev** so "we host weights on NVIDIA" is true on camera. Everything else proxied so all 23 are invokable day one.
+Self-host target: **the whole esoteric set on the DGX Spark** (ASCII/art/glyph/visual finetunes), served by Ollama, reached over Tailscale. Only the big flagships (Hermes 4, Nemotron 3 Ultra) are proxied. Brev is paid burst when the Spark can't keep up — and the line item the agent pays to survive.
 
 ---
 
@@ -265,12 +292,13 @@ D2  registry + pantheon grid + model pages (all 23 seeded)
 D3  proxy router → all 23 invokable (NVIDIA build + Nous + OpenRouter); chat + streaming;
     chats persisted as Honcho sessions
 D4  Stripe subs + auth gating + usage/ledger
-D5  Brev: stand up 1–2 self-hosted models behind the router
+D5  Spark: Ollama serving the esoteric set over Tailscale → gpu://spark/* live;
+    Brev burst adapter as the paid overflow. (derisk Tailscale exposure early.)
 D6  Hermes agents wired (hermetika + steward peers) + steward survival top-up via Stripe Skills
 D7  polish (techo-digital × liquid metal), seed real cards, record demo (steward closing the loop)
 ```
 
-MVP-real = all 23 invokable, 1–2 self-hosted on NVIDIA Brev, subs live, the steward (Hermes agent) autonomously topping up compute.
+MVP-real = all 23 invokable, the esoteric set self-hosted on the DGX Spark, flagships proxied, subs live, the steward (Hermes agent) autonomously topping up Brev/API to keep the pantheon lit.
 
 ---
 
@@ -278,7 +306,7 @@ MVP-real = all 23 invokable, 1–2 self-hosted on NVIDIA Brev, subs live, the st
 
 - **Astrology** — fully cut. Clean curation service; the survival loop + self-hosting carry the thesis.
 - **Profiles** — 2 for MVP: `hermetika` (operator/curator/ops) + `steward` (money). Other two split out post-hack.
-- **Self-host GPU** — NVIDIA Brev, access confirmed (`eri-e0bbf8-sqdj`). Modal stays as fallback adapter behind same router interface.
+- **Self-host GPU** — **DGX Spark, owned + on-network**, hosts the whole esoteric set via Ollama over Tailscale (`gpu://spark/*`). Brev = paid burst + the survival-loop spend side (`gpu://brev/*`, access `eri-e0bbf8-sqdj`). Flagships proxied. Owned floor, paid ceiling.
 - **Agent ops** — the Hermes agent itself, not NemoClaw.
 - **Honcho** — doubles as session manager for talk-to-models chats + operator peer memory. Supabase keeps money + registry.
 - **Aesthetic** — techo-digital (TE hardware-panel) × Hermes/Mercury liquid metal; safety-gated motion.
