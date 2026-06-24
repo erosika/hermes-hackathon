@@ -1,0 +1,107 @@
+/* techo-digital × Hermes — quartz-black base, mercury chrome, one accent.
+   motion is safety-gated: slow + continuous only, never flashing. */
+
+:root {
+  --bg: #0a0b0d;
+  --panel: #111317;
+  --line: #20242b;
+  --ink: #d7dadf;
+  --dim: #6b7079;
+  --accent: #c9b6ff; /* single restrained accent (hermes violet-quartz) */
+  --chrome-1: #3a3f47;
+  --chrome-2: #7d828b;
+  --chrome-3: #c3c7cd;
+  --grid: 8px;
+  --mono: "Berkeley Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* panel silkscreen label */
+.label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.chassis {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: calc(var(--grid) * 4) calc(var(--grid) * 3);
+}
+
+header.bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: calc(var(--grid) * 2);
+  margin-bottom: calc(var(--grid) * 3);
+}
+
+.mark {
+  /* liquid-metal wordmark — slow chrome sweep, frozen for reduced-motion */
+  font-size: 18px;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+  background: linear-gradient(100deg, var(--chrome-1), var(--chrome-3), var(--chrome-2), var(--chrome-1));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: mercury 14s linear infinite;
+}
+
+@keyframes mercury {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark { animation: none; }
+}
+
+/* pantheon grid — hard grid, no rounded SaaS cards */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.cell {
+  background: var(--panel);
+  padding: calc(var(--grid) * 2);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--grid) * 1);
+  min-height: 120px;
+}
+
+.cell .name { font-size: 14px; color: var(--ink); }
+.cell .meta { display: flex; gap: var(--grid); flex-wrap: wrap; }
+
+.tag {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+}
+
+.kind { color: var(--accent); }
+
+.backend-gpu { color: var(--chrome-3); }
+.backend-proxy { color: var(--dim); }
