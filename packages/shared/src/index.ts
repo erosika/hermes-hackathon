@@ -14,6 +14,7 @@ export interface Model {
   lineage: string | null; // parent slug — the "dynasty"
   backend: Backend;
   backendRef: BackendRef;
+  speed: "fast" | "standard"; // fast = 1-3B hot lane (vLLM); standard = everything else
   releasedAt: string; // ISO date
   cardMd: string;
   tags: string[];
