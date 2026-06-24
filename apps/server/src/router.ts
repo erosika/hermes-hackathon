@@ -16,20 +16,25 @@ function parseRef(ref: BackendRef): { scheme: string; provider: string; id: stri
 }
 
 const PROVIDER_BASE: Record<string, string | undefined> = {
+  spark: process.env.SPARK_BASE_URL, // Ollama on the DGX Spark, over Tailscale
+  brev: process.env.BREV_BASE_URL, // paid burst
+  modal: process.env.MODAL_BASE_URL, // fallback adapter
   nvidia: "https://integrate.api.nvidia.com/v1",
   nous: "https://inference-api.nousresearch.com/v1",
   openrouter: "https://openrouter.ai/api/v1",
-  brev: process.env.BREV_BASE_URL,
-  modal: process.env.MODAL_BASE_URL,
 };
 
 const PROVIDER_KEY: Record<string, string | undefined> = {
+  spark: undefined, // owned box on the tailnet, no key
+  brev: process.env.BREV_API_KEY,
+  modal: process.env.MODAL_API_KEY,
   nvidia: process.env.NVIDIA_API_KEY,
   nous: process.env.NOUS_API_KEY,
   openrouter: process.env.OPENROUTER_API_KEY,
-  brev: process.env.BREV_API_KEY,
-  modal: process.env.MODAL_API_KEY,
 };
+
+// owned compute = free marginal cost; paid providers feed the survival-loop spend side.
+export const PAID_PROVIDERS = new Set(["brev", "modal", "nvidia", "nous", "openrouter"]);
 
 export function resolve(model: Model): Resolved {
   const { provider, id } = parseRef(model.backendRef);
