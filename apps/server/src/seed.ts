@@ -1,7 +1,8 @@
 import type { Model, Profile } from "@hermetika/shared";
 
 // seed pantheon — placeholder slice of the 23; real list + dates still open.
-// esoteric set → gpu://spark (owned DGX Spark via Tailscale); flagships proxied.
+// lanes: gpu://spark = vLLM hot (1-3B, fast); gpu://sparktail = Ollama breadth (paged);
+//        gpu://brev = paid burst (uncensored/overflow); proxy = community distills + flagships.
 export const MODELS: Model[] = [
   {
     id: "m_oracle07",
@@ -11,8 +12,9 @@ export const MODELS: Model[] = [
     lineage: "hermes-trismegistus",
     backend: "gpu",
     backendRef: "gpu://spark/oracle-07",
+    speed: "fast", // 1-3B ascii finetune on the vLLM hot lane
     releasedAt: "2025-11-02",
-    cardMd: "# Oracle 07\nASCII oracle finetune. Self-hosted on the DGX Spark.",
+    cardMd: "# Oracle 07\nASCII oracle finetune. Hot lane (vLLM) on the DGX Spark.",
     tags: ["esoteric", "ascii", "generative"],
     enabled: true,
   },
@@ -23,9 +25,10 @@ export const MODELS: Model[] = [
     kind: "visual",
     lineage: null,
     backend: "gpu",
-    backendRef: "gpu://spark/scarab",
+    backendRef: "gpu://sparktail/scarab",
+    speed: "standard", // larger visual model, breadth lane (Ollama, paged)
     releasedAt: "2025-09-14",
-    cardMd: "# Scarab\nVisual model. Self-hosted on the DGX Spark.",
+    cardMd: "# Scarab\nVisual model. Breadth lane (Ollama) on the DGX Spark.",
     tags: ["esoteric", "visual"],
     enabled: true,
   },
@@ -37,8 +40,9 @@ export const MODELS: Model[] = [
     lineage: "hermes-trismegistus",
     backend: "proxy",
     backendRef: "proxy://nous/hermes-4",
+    speed: "standard",
     releasedAt: "2025-08-01",
-    cardMd: "# Hermes 4\nTeknium's Hermes line — the dynasty head.",
+    cardMd: "# Hermes 4\nTeknium's Hermes line — the dynasty head. Proxied (Nous).",
     tags: ["hermes", "flagship"],
     enabled: true,
   },
@@ -50,6 +54,7 @@ export const MODELS: Model[] = [
     lineage: null,
     backend: "proxy",
     backendRef: "proxy://nvidia/nemotron-3-ultra",
+    speed: "standard",
     releasedAt: "2026-01-15",
     cardMd: "# Nemotron 3 Ultra\nFlagship, too large to self-host. Proxied via build.nvidia.com.",
     tags: ["nvidia", "flagship"],
@@ -63,6 +68,7 @@ export const MODELS: Model[] = [
     lineage: "qwen",
     backend: "proxy",
     backendRef: "proxy://openrouter/qwable",
+    speed: "standard",
     releasedAt: "2025-12-08",
     cardMd: "# Qwable\nWeird qwen distillation. Already community-hosted → proxied via OpenRouter.",
     tags: ["distill", "qwen", "community"],
@@ -76,6 +82,7 @@ export const MODELS: Model[] = [
     lineage: "gemma",
     backend: "proxy",
     backendRef: "proxy://openrouter/gemma-glyph",
+    speed: "standard",
     releasedAt: "2025-10-21",
     cardMd: "# Gemma Glyph\nGemma deriv finetune. Community-hosted → proxied via OpenRouter.",
     tags: ["gemma", "deriv", "community"],
@@ -89,6 +96,7 @@ export const MODELS: Model[] = [
     lineage: null,
     backend: "gpu",
     backendRef: "gpu://brev/unbound-13b",
+    speed: "standard",
     releasedAt: "2025-07-30",
     cardMd: "# Unbound 13B\nNo-guardrail finetune. Corporate APIs refuse it → self-hosted on Brev burst.",
     tags: ["uncensored", "no-guardrails"],
