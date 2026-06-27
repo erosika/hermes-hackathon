@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "dev:server": "bun run --filter './apps/server' dev",
-    "dev:web": "bun run --filter './apps/web' dev"
+    "dev:web": "bun run --filter './apps/web' dev",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.14"
   }
 }
