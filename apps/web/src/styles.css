@@ -72,6 +72,70 @@ header.bar {
   .mark { animation: none; }
 }
 
+/* survival ledger — the live hardware meter. calm by design: state is shown by
+   static color, never by flashing or motion (epilepsy constraint is a hard rule). */
+.meter {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: calc(var(--grid) * 2);
+  margin-bottom: calc(var(--grid) * 2);
+}
+
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--grid);
+  margin-bottom: calc(var(--grid) * 2);
+}
+
+.meter-row {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+@media (max-width: 640px) {
+  .meter-row { grid-template-columns: 1fr 1fr; }
+}
+
+.readout {
+  background: var(--bg);
+  padding: calc(var(--grid) * 1.5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* dot-matrix numerals — segmented readout feel */
+.digits {
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  letter-spacing: 0.04em;
+  color: var(--chrome-3);
+  text-shadow: 0 0 8px rgba(195, 199, 205, 0.12);
+}
+.digits.sm { font-size: 20px; color: var(--chrome-2); }
+
+.readout.ok .digits { color: #9fe3b4; text-shadow: 0 0 8px rgba(159, 227, 180, 0.14); }
+.readout.warn .digits { color: #e3c79f; text-shadow: 0 0 8px rgba(227, 199, 159, 0.16); }
+
+.steward-line { margin: calc(var(--grid) * 1.5) 0; color: var(--accent); }
+
+.tape {
+  border-top: 1px solid var(--line);
+  padding-top: var(--grid);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tape-row { display: flex; align-items: baseline; gap: var(--grid); }
+.tape-amt { font-variant-numeric: tabular-nums; color: var(--chrome-3); min-width: 70px; }
+.tape-note { font-size: 11px; color: var(--dim); }
+.tag.in { color: #9fe3b4; border-color: #2c4636; }
+.tag.out { color: #e3c79f; border-color: #4a4030; }
+
 /* pantheon grid — hard grid, no rounded SaaS cards */
 .grid {
   display: grid;

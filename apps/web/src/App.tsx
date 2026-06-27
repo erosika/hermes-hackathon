@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import type { Model } from "@hermetika/shared";
+import { getModels, laneLabel } from "./api";
+import { LedgerMeter } from "./LedgerMeter";
 
 export function App() {
   const [models, setModels] = useState<Model[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/models")
-      .then((r) => r.json())
+    getModels()
       .then(setModels)
       .catch((e) => setErr(String(e)));
   }, []);
@@ -19,7 +20,9 @@ export function App() {
         <span className="label">model pantheon · operated by hermes</span>
       </header>
 
-      <div className="label" style={{ marginBottom: "16px" }}>
+      <LedgerMeter />
+
+      <div className="label" style={{ margin: "16px 0" }}>
         pantheon — {models.length} models
       </div>
 
@@ -39,7 +42,7 @@ export function App() {
               className={`label ${m.backend === "gpu" ? "backend-gpu" : "backend-proxy"}`}
               style={{ marginTop: "auto" }}
             >
-              {m.backend === "gpu" ? "◆ self-hosted · brev" : "proxy"} · {m.releasedAt}
+              {laneLabel(m.backendRef)} · {m.releasedAt}
             </span>
           </div>
         ))}
