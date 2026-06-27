@@ -62,4 +62,6 @@ export interface LedgerEntry {
 export const FLOAT = {
   lowWater: 20,
   topUp: 25,
+  tickMs: 10_000, // steward evaluates float on this cadence
+  cooldownMs: 30_000, // min gap between autonomous top-ups so one dip = one charge
 } as const;

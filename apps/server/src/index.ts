@@ -3,13 +3,20 @@ import { cors } from "@elysiajs/cors";
 import { MODELS, PROFILES } from "./seed";
 import { dispatch } from "./router";
 import { startHealthLoop, snapshot } from "./health";
-import { meter, ledger, floatUsd, stewardDecision } from "./ledger";
+import { meter, ledger, floatUsd, incomeUsd, spendUsd, netUsd, stewardStatus, startStewardLoop, recordIncome } from "./ledger";
 import { newSession } from "./honcho";
 import type { ChatRequest } from "@hermetika/shared";
 
 const port = Number(process.env.PORT ?? 3001);
 
+// demo revenue so the P&L has a customer side until Stripe subs land (D4).
+if (process.env.SEED_DEMO_REVENUE !== "0") {
+  recordIncome(30, "stripe", "pantheon pro · sub");
+  recordIncome(18, "stripe", "pantheon pro · sub");
+}
+
 startHealthLoop();
+startStewardLoop();
 
 const app = new Elysia()
   .use(cors())
@@ -27,8 +34,8 @@ const app = new Elysia()
 
   // ops surfaces — backend health + survival-loop P&L
   .get("/api/backends", () => snapshot())
-  .get("/api/ledger", () => ({ float: floatUsd(), entries: ledger() }))
-  .get("/api/steward", () => stewardDecision())
+  .get("/api/ledger", () => ({ float: floatUsd(), income: incomeUsd(), spend: spendUsd(), net: netUsd(), entries: ledger() }))
+  .get("/api/steward", () => stewardStatus())
 
   // OpenAI-compatible inference gateway
   .post(
