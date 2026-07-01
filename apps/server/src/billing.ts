@@ -2,10 +2,12 @@
 // surface (Payment Link to subscribe, or Billing Portal to manage). configure STRIPE_PORTAL_URL
 // with that link; with none set we hand back a local demo URL so the flow runs dry.
 
+// one plan: $2/mo, unlimited access to the whole pantheon.
 export const PLAN = {
   slug: "pantheon-pro",
   name: "Pantheon Pro",
-  priceUsd: Number(process.env.PANTHEON_PRICE_USD ?? 9),
+  blurb: "unlimited access",
+  priceUsd: Number(process.env.PANTHEON_PRICE_USD ?? 2),
 } as const;
 
 export interface SubscribeLink {
