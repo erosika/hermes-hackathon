@@ -45,8 +45,12 @@ export function CreditsWidget() {
             <div className="credits-about">
               <span className="label">about</span>
               <p>
-                built by <b>eri</b> — engineer at Plastic Labs. <span className="dim">@erosika</span>
+                built by <b>eri</b> — engineer at Plastic Labs.
               </p>
+              <div className="credits-links">
+                <a href="https://x.com/3rosika" target="_blank" rel="noopener noreferrer">twitter ↗</a>
+                <a href="https://github.com/erosika" target="_blank" rel="noopener noreferrer">github ↗</a>
+              </div>
             </div>
 
             <div className="credits-hack label">
