@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { type Model, type ChatMessage, PRICING } from "@hermetika/shared";
-import { laneLabel } from "./api";
+import { type Model, type ChatMessage } from "@hermetika/shared";
 import { useChatStream } from "./useChatStream";
 import { MercurySigil } from "./MercurySigil";
 
@@ -18,8 +17,6 @@ export function SandboxWindow({ model, models, onSwap }: { model: FullModel; mod
   useEffect(() => { reset(); setMessages([]); }, [model.slug, reset]);
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, output]);
 
-  const price = model.priceUsd ?? PRICING.defaultMonthlyUsd;
-  const desc = (model.cardMd ?? "").replace(/^#.*\n?/, "").trim(); // drop the card heading
   const spent = !pro && remaining === 0;
   const pct = pro ? 100 : remaining == null ? 100 : (remaining / FREE_PER_MODEL) * 100;
 
@@ -43,8 +40,10 @@ export function SandboxWindow({ model, models, onSwap }: { model: FullModel; mod
         <div className="sigil"><MercurySigil size={40} accent /></div>
         <div className="sbx-id">
           <h2 className="sbx-model">{model.name}</h2>
-          <span className="sbx-lane label">
-            <span className={model.backend === "gpu" ? "backend-gpu" : "backend-proxy"}>{laneLabel(model.backendRef)}</span> · ${price}/mo
+          <span className="sbx-info label">
+            {model.resident !== undefined && <span className={`dot ${model.resident ? "on" : "off"}`} />}
+            {[model.params, model.author, model.license, model.kind, model.releasedAt].filter(Boolean).join(" · ")}
+            {model.hfUrl && <> · <a href={model.hfUrl} target="_blank" rel="noopener noreferrer">hf ↗</a></>}
           </span>
         </div>
         <select
@@ -56,24 +55,6 @@ export function SandboxWindow({ model, models, onSwap }: { model: FullModel; mod
           {models.map((m) => <option key={m.slug} value={m.slug}>{m.name}</option>)}
         </select>
       </div>
-
-      <div className="sbx-info">
-        {model.resident !== undefined && (
-          <span><span className={`dot ${model.resident ? "on" : "off"}`} /> {model.resident ? "resident" : "paged"}</span>
-        )}
-        {model.author && <span><span className="label">author</span> {model.author}</span>}
-        {model.params && <span><span className="label">params</span> {model.params}</span>}
-        {model.license && <span><span className="label">license</span> {model.license}</span>}
-        {model.lineage && <span><span className="label">lineage</span> {model.lineage}</span>}
-        {model.kind && <span><span className="label">kind</span> {model.kind}</span>}
-        {model.releasedAt && <span><span className="label">released</span> {model.releasedAt}</span>}
-        {model.hfUrl && <a href={model.hfUrl} target="_blank" rel="noopener noreferrer">hugging face ↗</a>}
-      </div>
-
-      {desc && <p className="sbx-desc">{desc}</p>}
-      {model.tags && model.tags.length > 0 && (
-        <div className="sbx-tags">{model.tags.map((t) => <span className="tag" key={t}>{t}</span>)}</div>
-      )}
 
       <div className="transcript" ref={scrollRef}>
         {messages.length === 0 && !streaming && <div className="transcript-empty label">speak to the model — enter to send</div>}
