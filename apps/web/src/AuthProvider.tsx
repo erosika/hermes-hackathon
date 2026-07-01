@@ -1,15 +1,24 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { getMe, login as apiLogin, logout as apiLogout } from "./api";
+import { supabase, supabaseEnabled, setToken } from "./supabase";
+import { getMe } from "./api";
 
 interface Ctx {
   email: string | null;
   subscribed: boolean;
-  login: (email: string) => Promise<void>;
-  logout: () => Promise<void>;
+  configured: boolean;
+  signIn: (email: string) => Promise<void>; // sends a magic link / OTP
+  signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
-const AuthCtx = createContext<Ctx>({ email: null, subscribed: false, login: async () => {}, logout: async () => {}, refresh: async () => {} });
+const AuthCtx = createContext<Ctx>({
+  email: null,
+  subscribed: false,
+  configured: false,
+  signIn: async () => {},
+  signOut: async () => {},
+  refresh: async () => {},
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
@@ -17,26 +26,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = async () => {
     try {
-      const me = await getMe();
+      const me = await getMe(); // server verifies the JWT and returns subscription status
       setEmail(me.email);
       setSubscribed(me.subscribed);
     } catch { /* gateway offline */ }
   };
 
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => {
+      setToken(data.session?.access_token ?? null);
+      if (data.session) void refresh();
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setToken(session?.access_token ?? null);
+      setEmail(session?.user?.email ?? null);
+      if (session) void refresh();
+      else setSubscribed(false);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
-  const login = async (e: string) => {
-    const me = await apiLogin(e);
-    setEmail(me.email);
-    setSubscribed(me.subscribed);
+  const signIn = async (e: string) => {
+    if (!supabase) throw new Error("auth not configured");
+    const { error } = await supabase.auth.signInWithOtp({ email: e, options: { emailRedirectTo: window.location.origin } });
+    if (error) throw error;
   };
-  const logout = async () => {
-    await apiLogout();
+  const signOut = async () => {
+    await supabase?.auth.signOut();
+    setToken(null);
     setEmail(null);
     setSubscribed(false);
   };
 
-  return <AuthCtx.Provider value={{ email, subscribed, login, logout, refresh }}>{children}</AuthCtx.Provider>;
+  return (
+    <AuthCtx.Provider value={{ email, subscribed, configured: supabaseEnabled, signIn, signOut, refresh }}>
+      {children}
+    </AuthCtx.Provider>
+  );
 }
 
 export const useAuth = () => useContext(AuthCtx);

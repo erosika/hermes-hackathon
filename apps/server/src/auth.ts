@@ -1,49 +1,60 @@
-// signed-cookie sessions — HMAC-SHA256 over the customer email, no DB, no deps.
-// email-only sign-in for the demo (a magic-link/password is post-hackathon hardening);
-// the cookie is tamper-proof so the gateway can trust the identity it carries.
+// real auth — verify the Supabase-issued JWT on the Authorization header.
+// no cookie, no shared password: the client signs in via Supabase (magic link / OTP),
+// gets a JWT, and sends it as `Bearer <token>`. we verify HS256 against the project's
+// JWT secret and trust the email/sub inside. set SUPABASE_JWT_SECRET (Supabase → API → JWT Secret).
 
-const SECRET = process.env.SESSION_SECRET ?? "hermetika-dev-secret-change-me";
-export const COOKIE_NAME = "hpx_sess";
-const MAX_AGE = 60 * 60 * 24 * 30;
-
-let keyPromise: Promise<CryptoKey> | null = null;
-function key() {
-  if (!keyPromise) {
-    keyPromise = crypto.subtle.importKey("raw", new TextEncoder().encode(SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  }
-  return keyPromise;
+export interface Identity {
+  email: string;
+  sub: string; // supabase user id
 }
 
-const b64url = (s: string) => btoa(s).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-const unb64url = (s: string) => atob(s.replaceAll("-", "+").replaceAll("_", "/"));
+const enc = (s: string) => new TextEncoder().encode(s);
+const secret = () => process.env.SUPABASE_JWT_SECRET;
 
-async function hmacHex(msg: string): Promise<string> {
-  const sig = await crypto.subtle.sign("HMAC", await key(), new TextEncoder().encode(msg));
-  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+function b64urlToBytes(s: string): Uint8Array<ArrayBuffer> {
+  const b64 = s.replaceAll("-", "+").replaceAll("_", "/") + "===".slice((s.length + 3) % 4);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(new ArrayBuffer(bin.length));
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
 }
 
-export async function signSession(email: string): Promise<string> {
-  const payload = b64url(email);
-  return `${payload}.${await hmacHex(payload)}`;
+let cached: { secret: string; key: CryptoKey } | null = null;
+async function key(sec: string): Promise<CryptoKey> {
+  if (cached?.secret === sec) return cached.key;
+  const k = await crypto.subtle.importKey("raw", enc(sec), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+  cached = { secret: sec, key: k };
+  return k;
 }
 
-export async function readSessionEmail(cookieHeader?: string | null): Promise<string | null> {
-  const raw = cookieHeader?.split(/;\s*/).find((c) => c.startsWith(`${COOKIE_NAME}=`))?.slice(COOKIE_NAME.length + 1);
-  if (!raw) return null;
-  const [payload, sig] = raw.split(".");
-  if (!payload || !sig) return null;
-  if ((await hmacHex(payload)) !== sig) return null; // forged / tampered
+export function authConfigured(): boolean {
+  return !!secret();
+}
+
+export async function readIdentity(request: Request): Promise<Identity | null> {
+  const sec = secret();
+  if (!sec) return null; // auth not wired — no trusted identity
+  const header = request.headers.get("authorization");
+  const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) return null;
+
+  const [h, p, s] = token.split(".");
+  if (!h || !p || !s) return null;
+
   try {
-    return unb64url(payload);
+    const ok = await crypto.subtle.verify("HMAC", await key(sec), b64urlToBytes(s), enc(`${h}.${p}`));
+    if (!ok) return null;
+    const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(p))) as {
+      email?: string;
+      sub?: string;
+      exp?: number;
+      user_metadata?: { email?: string };
+    };
+    if (payload.exp && Date.now() / 1000 > payload.exp) return null; // expired
+    const email = payload.email ?? payload.user_metadata?.email;
+    if (!email || !payload.sub) return null;
+    return { email: String(email).toLowerCase(), sub: String(payload.sub) };
   } catch {
     return null;
   }
-}
-
-export function sessionCookie(token: string): string {
-  return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE}`;
-}
-
-export function clearCookie(): string {
-  return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 }

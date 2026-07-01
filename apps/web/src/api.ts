@@ -1,6 +1,7 @@
 import type { LedgerEntry, Model, Profile, Subscription } from "@hermetika/shared";
+import { authHeader } from "./supabase";
 
-// thin client over the gateway's REST surface.
+// thin client over the gateway's REST surface. auth is the Supabase JWT (Bearer).
 
 export interface RevenueView {
   mrr: number;
@@ -21,26 +22,15 @@ export interface SubscribeLink {
 export interface Me {
   email: string | null;
   subscribed: boolean;
+  authConfigured?: boolean;
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const r = await fetch(path);
+  const r = await fetch(path, { headers: authHeader() });
   if (!r.ok) throw new Error(`${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }
 
-async function postJson<T>(path: string, body?: unknown): Promise<T> {
-  const r = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(`${path} → ${r.status}`);
-  return r.json() as Promise<T>;
-}
-
-export const login = (email: string) => postJson<Me>("/api/auth/login", { email });
-export const logout = () => postJson<{ ok: boolean }>("/api/auth/logout");
 export const getMe = () => getJson<Me>("/api/auth/me");
 
 export const getModels = () => getJson<Model[]>("/api/models");

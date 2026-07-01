@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import type { ChatMessage } from "@hermetika/shared";
+import { authHeader } from "./supabase";
 
 interface StreamDelta {
   choices?: { delta?: { content?: string } }[];
@@ -31,7 +32,7 @@ export function useChatStream(): UseChatStream {
     try {
       const res = await fetch("/v1/chat/completions", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...authHeader() },
         body: JSON.stringify({
           model: modelSlug,
           messages,

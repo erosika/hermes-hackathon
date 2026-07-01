@@ -6,7 +6,7 @@ import { startHealthLoop, snapshot } from "./health";
 import { incomeEntries, incomeUsd, recordIncome } from "./ledger";
 import { activateSubscription, listSubscriptions, subscriptionSummary, isSubscribed } from "./subscriptions";
 import { subscribeUrl, PLAN } from "./billing";
-import { signSession, readSessionEmail, sessionCookie, clearCookie } from "./auth";
+import { readIdentity, authConfigured } from "./auth";
 import { checkFreeTier, FREE } from "./ratelimit";
 import { newSession } from "./honcho";
 import { verifyAndParse, handleStripeEvent, type StripeEventLike } from "./webhooks";
@@ -40,25 +40,18 @@ const app = new Elysia()
   .get("/api/profiles", () => PROFILES)
   .get("/api/backends", () => snapshot())
 
-  // auth — email sign-in, signed-cookie session
-  .post("/api/auth/login", async ({ body, set }) => {
-    const email = (body as { email: string }).email.trim().toLowerCase();
-    if (!email) return { email: null, subscribed: false };
-    set.headers["set-cookie"] = sessionCookie(await signSession(email));
-    return { email, subscribed: isSubscribed(email) };
-  }, { body: t.Object({ email: t.String() }) })
+  // auth — identity from the Supabase JWT (Bearer). sign-in itself happens client-side.
   .get("/api/auth/me", async ({ request }) => {
-    const email = await readSessionEmail(request.headers.get("cookie"));
-    return { email, subscribed: email ? isSubscribed(email) : false };
+    const id = await readIdentity(request);
+    return { email: id?.email ?? null, subscribed: id ? isSubscribed(id.email) : false, authConfigured: authConfigured() };
   })
-  .post("/api/auth/logout", ({ set }) => { set.headers["set-cookie"] = clearCookie(); return { ok: true }; })
 
   // subscription business — one plan, MRR + income log
   .get("/api/revenue", () => ({ ...subscriptionSummary(), incomeTotal: incomeUsd(), entries: incomeEntries() }))
   .get("/api/subscriptions", () => listSubscriptions())
   .get("/api/subscribe", async ({ request }) => {
-    const email = await readSessionEmail(request.headers.get("cookie"));
-    return subscribeUrl(email ?? undefined);
+    const id = await readIdentity(request);
+    return subscribeUrl(id?.email);
   })
 
   // demo checkout — opening the subscribe url books a Pantheon Pro sub for the signed-in email.
@@ -95,7 +88,8 @@ const app = new Elysia()
       if (!model) return status(404, { error: `unknown model '${req.model}'` });
 
       // access gate — subscribers are unlimited; everyone else gets the free tier.
-      const email = await readSessionEmail(request.headers.get("cookie"));
+      const id = await readIdentity(request);
+      const email = id?.email ?? null;
       const pro = email ? isSubscribed(email) : false;
       let freeRemaining: number = FREE.lifetime;
       if (!pro) {

@@ -6,24 +6,50 @@ import type { LayoutMode } from "./lib/TilingLayoutManager";
 import type { WinState } from "./Desktop";
 
 function AuthCluster() {
-  const { email, subscribed, login, logout } = useAuth();
+  const { email, subscribed, configured, signIn, signOut } = useAuth();
   const [draft, setDraft] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "sent" | "error">("idle");
+
+  if (!configured) return <span className="label" title="set VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY">auth not configured</span>;
+
   if (email) {
     return (
       <div className="auth">
         <span className={`badge ${subscribed ? "pro" : "free"}`}>{subscribed ? "pro" : "free"}</span>
         <span className="label auth-email">{email}</span>
-        <button className="seg-btn" onClick={() => void logout()}>sign out</button>
+        <button className="seg-btn" onClick={() => void signOut()}>sign out</button>
       </div>
     );
   }
+
+  if (state === "sent") return <span className="label">check your email for the link ↗</span>;
+
+  const submit = async () => {
+    const v = draft.trim();
+    if (!v || state === "busy") return;
+    setState("busy");
+    try {
+      await signIn(v);
+      setState("sent");
+    } catch {
+      setState("error");
+    }
+  };
+
   return (
-    <form
-      className="auth"
-      onSubmit={(e) => { e.preventDefault(); if (draft.trim()) void login(draft.trim()); }}
-    >
-      <input className="pick auth-in" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="email" type="email" />
-      <button className="seg-btn" type="submit">sign in</button>
+    <form className="auth" noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }}>
+      <input
+        className={`pick auth-in ${state === "error" ? "bad" : ""}`}
+        value={draft}
+        onChange={(e) => { setDraft(e.target.value); if (state === "error") setState("idle"); }}
+        placeholder="email · magic link"
+        type="text"
+        inputMode="email"
+        autoComplete="email"
+      />
+      <button className="seg-btn" type="submit" disabled={state === "busy" || !draft.trim()}>
+        {state === "busy" ? "…" : "sign in"}
+      </button>
     </form>
   );
 }
