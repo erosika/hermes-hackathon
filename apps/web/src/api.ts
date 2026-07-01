@@ -1,5 +1,6 @@
 import type { LedgerEntry, Model, Profile, Subscription } from "@hermetika/shared";
 import { authHeader } from "./supabase";
+import { API_BASE } from "./config";
 
 // thin client over the gateway's REST surface. auth is the Supabase JWT (Bearer).
 
@@ -26,7 +27,7 @@ export interface Me {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const r = await fetch(path, { headers: authHeader() });
+  const r = await fetch(`${API_BASE}${path}`, { headers: authHeader() });
   if (!r.ok) throw new Error(`${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }

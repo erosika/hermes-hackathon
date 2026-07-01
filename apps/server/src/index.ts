@@ -25,8 +25,11 @@ if (process.env.SEED_DEMO_REVENUE !== "0") {
 
 startHealthLoop();
 
+// prod: set CORS_ORIGIN=https://hermetika.io (comma-sep for multiple). unset = allow all (dev).
+const corsOrigin = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim()) : true;
+
 const app = new Elysia()
-  .use(cors())
+  .use(cors({ origin: corsOrigin }))
   .get("/health", () => ({ ok: true, models: MODELS.length, profiles: PROFILES.length }))
 
   // registry
