@@ -49,6 +49,7 @@ export async function dispatch(model: Model, req: ChatRequest): Promise<{ res: R
       messages: req.messages,
       stream: req.stream ?? false,
       stream_options: req.stream ? { include_usage: true } : undefined,
+      max_tokens: req.maxTokens, // gateway-clamped output ceiling
       stop: ["<|im_end|>", "<|im_start|>", "<|eot_id|>"], // some GGUFs leak template tokens
     }),
   });

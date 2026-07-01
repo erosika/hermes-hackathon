@@ -55,6 +55,7 @@ export interface ChatRequest {
   model: string; // slug
   messages: ChatMessage[];
   stream?: boolean;
+  maxTokens?: number; // output cap; clamped to the gateway ceiling
   sessionId?: string; // honcho session for continuity across the deck
 }
 

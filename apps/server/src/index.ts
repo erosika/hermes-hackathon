@@ -22,6 +22,10 @@ startStewardLoop();
 // customer auth on /v1 — shared keys for now; builder swaps for Stripe-issued per-customer keys.
 const gatewayKeys = (process.env.GATEWAY_KEYS ?? "").split(",").filter(Boolean);
 
+// input/output guards — protect the GPUs from oversized prompts + runaway generations.
+const MAX_INPUT_CHARS = Number(process.env.MAX_INPUT_CHARS ?? 24000); // ~6k tokens
+const MAX_OUTPUT_TOKENS = Number(process.env.MAX_OUTPUT_TOKENS ?? 2048);
+
 // per-key rate limit — in-memory sliding window (single machine; move to Redis for multi-node).
 const RPM = Number(process.env.RATE_LIMIT_RPM ?? 60);
 const RATE_WINDOW_S = 60;
@@ -110,6 +114,11 @@ const app = new Elysia()
       const req = body as ChatRequest;
       const model = MODELS.find((m) => m.slug === req.model);
       if (!model) return status(404, { error: `unknown model '${req.model}'` });
+      const inputChars = req.messages.reduce((n, m) => n + m.content.length, 0);
+      if (inputChars > MAX_INPUT_CHARS) {
+        return status(413, { error: "input too large", max_input_chars: MAX_INPUT_CHARS, got: inputChars });
+      }
+      req.maxTokens = Math.min(req.maxTokens ?? MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS);
       const session = newSession(req.sessionId ?? `s_${req.model}`);
 
       try {
@@ -150,6 +159,7 @@ const app = new Elysia()
         model: t.String(),
         messages: t.Array(t.Object({ role: t.String(), content: t.String() })),
         stream: t.Optional(t.Boolean()),
+        maxTokens: t.Optional(t.Number()),
         sessionId: t.Optional(t.String()),
       }),
     },
