@@ -346,5 +346,5 @@ Show ledger panel: income $12.00, spend $8.50, float $23.80 → dot added. "Auto
 
 ---
 
-_Spec version: 0.1 | written 2026-06-30 23:xx | Eri Barrett / Hermes Hackathon_
+_Spec version: 0.1 | written 2026-06-30 | eri (erosika) / Hermes Hackathon_
 _Based on: existing SPEC.md + CHECKLIST.md + erosika/workstation-ui-shell aesthetic direction_

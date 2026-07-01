@@ -1,8 +1,19 @@
 # Hermetika
 
-A curated inference **pantheon** — a small, opinionated set of esoteric and experimental models served behind one OpenAI-compatible gateway — that is **operated by agents, not people**. Two Hermes peers run it end to end: `hermetika` (orchestrator / curator / ops — admits models, watches health, fails backends over) and `steward` (money — reads the ledger, watches the compute float, buys its own compute). The thesis is the **survival loop**: a customer subscribes via Stripe, the income lands on the ledger, and when the compute float dips below its low-water mark the steward autonomously tops itself up — buying the very compute that keeps the pantheon lit. Owned floor (a DGX Spark on Tailscale, free marginal cost), paid ceiling (NVIDIA Brev burst + proxied flagships). A human never touches the hot loop.
+An interface for the exploration of esoteric and experimental agents — a small, curated set of models served behind one OpenAI-compatible gateway, **operated by an agent, not a person**. A Hermes peer (`hermetika`) runs the business layer: it curates which models are admitted, watches backend health, and fails lanes over. Humans browse, chat, and subscribe; the operator keeps the lights on.
+
+Owned floor, paid ceiling: the esoteric set is self-hosted on a DGX Spark over Tailscale (zero marginal cost), with proxied flagships as the paid ceiling.
 
 Built for the Hermes Agent Accelerated Business Hackathon (NVIDIA × Stripe × Nous).
+
+---
+
+## What it is
+
+- **A curated deck of ~18 models** — artistic, ASCII, esoteric, visual, wordplay — each with a real model card, author, license, and lineage.
+- **A tiling sandbox** — open models in a keyboard-driven window manager, chat in a continuous terminal flow, swap models per window.
+- **A subscription business** — a free tier (5 messages per model) gated by real auth; **$3/mo** unlocks unlimited access via Stripe.
+- **Run by an agent** — the `hermetika` operator admits models, watches health, and curates the deck. It runs the business; it does not gate access.
 
 ---
 
@@ -10,56 +21,53 @@ Built for the Hermes Agent Accelerated Business Hackathon (NVIDIA × Stripe × N
 
 ```
 ┌─ BROWSER ─────────────────────────────────────────────┐
-│  Vite + React sandbox (:5173)                          │
-│  pantheon grid · model cards · live ledger meter        │
-│  chat / run · subscribe                                 │
+│  Vite + React sandbox                                  │
+│  tiling window manager · model cards · terminal chat   │
+│  Supabase auth (magic link) · subscribe                │
 └───────────────────────────┬───────────────────────────┘
-                            │  /api  ·  /v1   (vite proxy → :3001)
-┌─ SERVER ──────────────────┴────────────────────────────┐
-│  Elysia on Bun  (:3001)                                 │
+                            │  /api  ·  /v1
+┌─ GATEWAY ─────────────────┴────────────────────────────┐
+│  Elysia on Bun                                          │
 │                                                         │
-│   GATEWAY   POST /v1/chat/completions  (OpenAI-compat)  │
-│   ROUTER    slug → backend resolution + failover        │
-│   LEDGER    two balances: USD cash P&L + compute float  │
-│   STEWARD   loop: float < low-water → guarded top-up    │
-│   WEBHOOKS  /webhooks/stripe → book income              │
-│   NUDGE     /api/nudge → admit models live              │
-└──┬────────────────┬───────────────┬───────────────┬────┘
-  │ dispatch        │ income        │ top-up spend  │ persist
-  ▼                ▼               ▼               ▼
-┌─ CLOUD / COMPUTE ─┐ ┌─ STRIPE ──┐ ┌─ STRIPE ────┐ ┌─ SUPABASE ─┐
-│ gpu://spark  vLLM │ │ Checkout  │ │ Issuing /   │ │ pg + auth  │
-│ gpu://sparktail   │ │ + subs    │ │ Skills rail │ │ registry   │
-│   Ollama (paged)  │ │ webhooks  │ │ (agent      │ │ ledger     │
-│ gpu://brev  burst │ │           │ │  wallet)    │ │ subs       │
-│ proxy://nvidia    │ └─────┬─────┘ └──────┬──────┘ └────────────┘
-│ proxy://nous      │       │ income        │ spend
-│ proxy://openrouter│       └───────────────┴──► LEDGER (net = money-shot)
-└─────────▲─────────┘
+│   INFERENCE  POST /v1/chat/completions  (OpenAI-compat) │
+│   ROUTER     slug → backend resolution + failover       │
+│   AUTH       verifies the Supabase JWT server-side      │
+│   RATE-LIMIT free tier: 5 messages per model            │
+│   BILLING    /api/subscribe → Stripe Checkout           │
+│   WEBHOOKS   /webhooks/stripe → activate subscription   │
+│   OPERATOR   /api/nudge → admit models live             │
+└──┬───────────────────────────────┬────────────────┬────┘
+  │ dispatch                        │ auth           │ billing
+  ▼                                 ▼                ▼
+┌─ COMPUTE ──────────┐   ┌─ SUPABASE ─┐   ┌─ STRIPE ──────┐
+│ gpu://spark  vLLM  │   │  auth      │   │  Checkout     │
+│ gpu://sparktail    │   │  (JWT)     │   │  + subs       │
+│   Ollama (breadth) │   └────────────┘   │  webhooks     │
+│ proxy://{nvidia,   │                     └───────────────┘
+│   nous, openrouter}│
+└─────────▲──────────┘
           └─ Tailscale: DGX Spark (owned floor, free marginal cost)
 ```
-
-Owned floor, paid ceiling: the Spark serves the esoteric set at zero marginal cost; the steward's real recurring spend is Brev burst + proxy API credits — the line item it pays to survive.
 
 ---
 
 ## Run locally
 
-Requires [Bun](https://bun.sh). Runs fully in **demo / dry-run mode with no keys** — every external rail (Stripe, Brev, Spark, Honcho, Supabase) degrades to a safe stub, so the whole survival loop fires locally without a single credential.
+Requires [Bun](https://bun.sh). Runs fully in **demo mode with no keys** — every external rail (Stripe, Supabase, Spark, proxies) degrades to a safe stub, so the UI and gateway come up without a single credential.
 
 ```sh
 bun install         # workspace install (server + web + shared)
-bun run dev         # both apps: gateway :3001 + sandbox :5173
+bun run dev         # gateway :3001 + sandbox :5173
 ```
 
-Or run each side alone:
+Or each side alone:
 
 ```sh
 bun run dev:server  # Elysia gateway on http://localhost:3001
 bun run dev:web     # Vite sandbox on  http://localhost:5173  (proxies /api and /v1 → :3001)
 ```
 
-Copy `apps/server/.env.example` → `apps/server/.env` and fill in as you go — each key upgrades one stub to real. See [CHECKLIST.md](./CHECKLIST.md) for the account-side setup.
+Copy `apps/server/.env.example` → `apps/server/.env` and `apps/web/.env.example` → `apps/web/.env.local`, then fill keys as you go — each one upgrades a stub to real.
 
 ---
 
@@ -69,46 +77,30 @@ The real routes from `apps/server/src/index.ts`:
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| `GET`  | `/health` | Liveness — returns `ok`, model count, operator count. |
-| `GET`  | `/api/models` | Registry — all enabled models in the pantheon. |
+| `GET`  | `/health` | Liveness — `ok`, model count, operator count. |
+| `GET`  | `/api/models` | Registry — all enabled models (author, params, license, lineage, HF link). |
 | `GET`  | `/api/models/:slug` | One model card by slug (404 if unknown). |
-| `GET`  | `/api/profiles` | The Hermes operators (`hermetika`, `steward`). |
+| `GET`  | `/api/profiles` | The Hermes operator(s). |
 | `GET`  | `/api/backends` | Live backend health snapshot (drives failover). |
-| `GET`  | `/api/ledger` | Survival-loop P&L: `float`, `income`, `spend`, `net`, entries. |
-| `GET`  | `/api/steward` | Steward status — top-up decision, P&L, last action. |
-| `GET`  | `/api/subscriptions` | Active subscriptions (customer side). |
-| `POST` | `/v1/chat/completions` | OpenAI-compatible inference gateway; routes `model` slug → backend, meters tokens, streams SSE through. |
-| `POST` | `/api/checkout` | Mint a Checkout session for a model slug (demo session with no Stripe key). |
-| `POST` | `/api/nudge` | Hand the agent slugs (`"slug"` or `"slug:license"`) → admitted live, bypassing the scheduled scan. |
-| `POST` | `/webhooks/stripe` | Stripe income webhook — books revenue (demo mode parses directly; real mode verifies the signature). |
-| `GET`  | `/checkout/demo` | Demo checkout page — opening it fires `checkout.session.completed` and books income without real Stripe. |
+| `GET`  | `/api/auth/me` | Identity + subscription status for the bearer token. |
+| `GET`  | `/api/subscribe` | Mint a Stripe Checkout link (demo link with no key). |
+| `POST` | `/api/subscribe/demo` | Demo-mode grant — activates the signed-in user without Stripe (refused when live). |
+| `GET`  | `/api/portal` | Stripe Billing Portal link for the signed-in customer. |
+| `GET`  | `/api/subscriptions` | Active subscriptions. |
+| `GET`  | `/api/revenue` | Subscription revenue summary (MRR, active count). |
+| `GET`  | `/api/sessions`, `/api/sessions/:id` | Persisted chat sessions for the signed-in user. |
+| `POST` | `/v1/chat/completions` | OpenAI-compatible gateway; routes `model` slug → backend, meters the free tier, streams SSE. |
+| `POST` | `/api/nudge` | Operator admits models live (`"slug"` or `"slug:license"`). |
+| `POST` | `/webhooks/stripe` | Stripe webhook — verifies signature (real mode), activates/cancels subscriptions. |
 
 ---
 
-## Survival loop in one curl
+## Access model
 
-Seed the float just above low-water, drive the steward under it, watch it pay its own bill. No keys required.
-
-```sh
-# 1. mint a demo checkout session for a model (returns a /checkout/demo url)
-curl -s localhost:3001/api/checkout -H 'content-type: application/json' \
-  -d '{"slug":"oracle-07"}'
-
-# 2. "complete" that checkout → books customer income onto the ledger
-curl -s 'localhost:3001/checkout/demo?slug=oracle-07&price=12'
-
-# 3. watch the P&L: income in, float, net
-curl -s localhost:3001/api/ledger
-curl -s localhost:3001/api/steward
-```
-
-Paid inference burns the compute float. When it dips below `lowWater` ($20), the steward loop autonomously fires a guarded top-up (`topUp` $25) through its spend rail and books a `spend` row — logged to the gateway console as:
-
-```
-⚷ steward: float $19.40 < $20 → top-up $25 → float $44.40 · net $30.60
-```
-
-Income up, compute paid for, still net positive — and a human never touched it.
+- **Free tier** — 5 messages per model, enforced server-side (keyed by identity + model slug, unbypassable from the client).
+- **Subscriber** — `$3/mo` via Stripe Checkout; the webhook flips the account to unlimited.
+- **Auth** — Supabase magic-link / OTP; the gateway verifies the JWT on every request.
+- **Comps** — `HERMETIKA_PRO_EMAILS` (comma-separated) marks accounts pro regardless of Stripe.
 
 ---
 
@@ -117,26 +109,22 @@ Income up, compute paid for, still net positive — and a human never touched it
 Honest state of the entry.
 
 **Built**
-- OpenAI-compatible **gateway** (`/v1/chat/completions`) with streaming SSE passthrough.
-- **Router** — slug → backend resolution across two-lane self-host + proxies, with failover.
-- **Two-lane backends** — `gpu://spark` (vLLM hot), `gpu://sparktail` (Ollama breadth), `gpu://brev` (paid burst), `proxy://{nvidia,nous,openrouter}`.
-- **Ledger** — two-balance accounting: USD cash P&L (income/spend) + compute-credit float.
-- **Steward** — survival loop tick: low-water detection, cooldown gate, guarded spend, booked top-ups.
-- **Checkout + webhook** (demo) — `/api/checkout` → `/checkout/demo` → income booked; `/webhooks/stripe` handler.
-- **Admission + nudge** — `/api/nudge` admits models live via a license-gated admission path.
-- **Sandbox UI** — Vite/React pantheon grid + live ledger meter (float / net / income / spend).
-- **Streaming chat** — SSE relayed through the gateway with backend/session/failover headers.
+- OpenAI-compatible **gateway** with streaming SSE passthrough.
+- **Router** — slug → backend across two-lane self-host + proxies, with failover.
+- **Two-lane backends** — `gpu://spark` (vLLM hot), `gpu://sparktail` (Ollama breadth), `proxy://{nvidia,nous,openrouter}`.
+- **Real auth** — Supabase magic-link, JWT verified server-side.
+- **Per-model rate limiting** — free tier enforced at the gateway.
+- **Real Stripe** — Checkout (subscription mode), signature-verified webhooks, Billing Portal.
+- **Operator admission** — `/api/nudge` admits models via a license-gated path.
+- **Sandbox UI** — tiling window manager, per-model chat, themes, keyboard shortcuts.
 
-**Stubbed / next**
-- **Stripe live keys** — Checkout, subscriptions, and Issuing/Skills spend rail are scaffolded and degrade to demo without `STRIPE_SECRET_KEY`.
-- **Honcho real sessions** — session manager + operator peer memory are stubbed; SDK wiring pending.
-- **Supabase persistence** — schema scaffolded (registry / subs / usage / ledger / shares); ledger is in-memory today.
-- **Steward reasoning via Hermes-4** — the loop is deterministic; narrating decisions through Hermes-4 within the rails is the next roadmap item.
-
-See [CHECKLIST.md](./CHECKLIST.md) for the account-side setup (Stripe Issuing, subs, Honcho, Supabase, compute keys, deploy).
+**Roadmap**
+- **Durable subscriptions** — subscription state is in-memory today; the Supabase `subscriptions` table + registered webhook make it survive restarts.
+- **Custom SMTP** — sign-in emails use Supabase's built-in service (rate-limited); a real SMTP provider is needed for public traffic.
+- **Operator reasoning via Hermes** — admission/curation is deterministic; narrating it through a Hermes model is next.
 
 ---
 
 ## Stack
 
-Bun workspace · Elysia (gateway) · Vite + React (sandbox) · TypeScript throughout. Self-host on an owned DGX Spark (vLLM + Ollama over Tailscale) with NVIDIA Brev paid burst; flagships proxied via build.nvidia.com / Nous / OpenRouter. Stripe for the survival loop; Honcho for sessions + operator memory; Supabase as system-of-record.
+Bun workspace · Elysia (gateway) · Vite + React + TypeScript (sandbox) · Supabase (auth) · Stripe (subscriptions). Self-hosted on an owned DGX Spark (vLLM + Ollama over Tailscale); flagships proxied via build.nvidia.com / Nous / OpenRouter. Deployed on Cloudflare Pages (web) + Fly.io (gateway).

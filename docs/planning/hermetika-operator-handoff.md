@@ -54,7 +54,7 @@ not, ask Eri before reaching for any external model.
 
 ## Repo (Bun monorepo)
 
-Root: `/Users/eribarrett/Documents/coding/hermes-hackathon`. **Work in a git worktree.**
+Root: the repo checkout directory. **Work in a git worktree.**
 Package managers: **bun** (JS/TS), **uv** (Python) — never npm/pip.
 
 ```
