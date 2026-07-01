@@ -19,6 +19,8 @@ export interface Model {
   cardMd: string;
   tags: string[];
   enabled: boolean;
+  license?: string; // SPDX id — the admission gate (apache-2.0, mit, ...); null/absent = unvetted
+  priceUsd?: number; // monthly subscription price; falls back to PRICING.defaultMonthlyUsd
 }
 
 export type ProfileRole = "orchestrator" | "curator" | "ops" | "steward";
@@ -64,4 +66,41 @@ export const FLOAT = {
   topUp: 25,
   tickMs: 10_000, // steward evaluates float on this cadence
   cooldownMs: 30_000, // min gap between autonomous top-ups so one dip = one charge
+} as const;
+
+// customer side — subscriptions feed the income lane of the ledger.
+export type SubscriptionStatus = "active" | "canceled" | "past_due";
+
+export interface Subscription {
+  id: string;
+  modelSlug: string;
+  customerRef: string; // stripe customer id or email
+  status: SubscriptionStatus;
+  priceUsd: number;
+  createdAt: string;
+}
+
+// a Stripe Checkout session the sandbox opens to start a subscription.
+export interface CheckoutSession {
+  id: string;
+  url: string; // hosted checkout url (stub url in demo mode)
+  modelSlug: string;
+  priceUsd: number;
+}
+
+// per-call usage row (mirrors Supabase `usage`); powers the sandbox meter + spend lane.
+export interface UsageRow {
+  id: string;
+  modelSlug: string;
+  provider: string;
+  tokensIn: number;
+  tokensOut: number;
+  costUsd: number;
+  sessionId: string;
+  createdAt: string;
+}
+
+// pantheon pricing defaults.
+export const PRICING = {
+  defaultMonthlyUsd: 2,
 } as const;
