@@ -1,8 +1,9 @@
-// subscription billing — one plan, one button. the button redirects to a Stripe-hosted
-// surface (Payment Link to subscribe, or Billing Portal to manage). configure STRIPE_PORTAL_URL
-// with that link; with none set we hand back a local demo URL so the flow runs dry.
+import Stripe from "stripe";
 
-// one plan: $2/mo, unlimited access to the whole pantheon.
+// subscription billing. real path: create a Stripe Checkout Session (subscription mode)
+// tied to the signed-in email, so the webhook can activate the right customer. with no
+// STRIPE_SECRET_KEY we fall back to STRIPE_PORTAL_URL, then to a local demo checkout.
+
 export const PLAN = {
   slug: "pantheon-pro",
   name: "Pantheon Pro",
@@ -14,16 +15,50 @@ export interface SubscribeLink {
   url: string;
   plan: string;
   priceUsd: number;
-  live: boolean; // true when redirecting to real Stripe
+  live: boolean;
 }
 
-export function subscribeUrl(email?: string): SubscribeLink {
+let stripe: Stripe | null = null;
+export function stripeClient(): Stripe | null {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return null;
+  if (!stripe) stripe = new Stripe(key);
+  return stripe;
+}
+
+export async function subscribeUrl(email?: string): Promise<SubscribeLink> {
+  const s = stripeClient();
+  if (s) {
+    const appUrl = process.env.APP_URL ?? "http://localhost:5173";
+    const meta = { plan: PLAN.slug, ...(email ? { email } : {}) };
+    const session = await s.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: Math.round(PLAN.priceUsd * 100),
+            recurring: { interval: "month" },
+            product_data: { name: `${PLAN.name} — ${PLAN.blurb}` },
+          },
+        },
+      ],
+      ...(email ? { customer_email: email } : {}),
+      metadata: meta,
+      subscription_data: { metadata: meta }, // so subscription.* webhooks carry the email
+      success_url: `${appUrl}/?sub=success`,
+      cancel_url: `${appUrl}/?sub=cancel`,
+    });
+    if (session.url) return { url: session.url, plan: PLAN.slug, priceUsd: PLAN.priceUsd, live: true };
+  }
+
   const portal = process.env.STRIPE_PORTAL_URL;
   if (portal) {
-    // prefill the buyer on the Stripe-hosted page so the webhook ties the sub to them.
     const url = email ? `${portal}${portal.includes("?") ? "&" : "?"}prefilled_email=${encodeURIComponent(email)}` : portal;
     return { url, plan: PLAN.slug, priceUsd: PLAN.priceUsd, live: true };
   }
+
   const q = `plan=${PLAN.slug}&price=${PLAN.priceUsd}${email ? `&email=${encodeURIComponent(email)}` : ""}`;
   return { url: `/checkout/demo?${q}`, plan: PLAN.slug, priceUsd: PLAN.priceUsd, live: false };
 }

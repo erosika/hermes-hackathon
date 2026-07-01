@@ -57,8 +57,8 @@ describe("stripe webhook → revenue", () => {
 });
 
 describe("subscribe link", () => {
-  test("demo mode returns a local stub url", () => {
-    const link = subscribeUrl();
+  test("demo mode returns a local stub url", async () => {
+    const link = await subscribeUrl();
     expect(link.live).toBe(false);
     expect(link.url).toContain("/checkout/demo");
     expect(link.plan).toBe(PLAN.slug);

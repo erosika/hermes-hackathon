@@ -51,7 +51,7 @@ const app = new Elysia()
   .get("/api/subscriptions", () => listSubscriptions())
   .get("/api/subscribe", async ({ request }) => {
     const id = await readIdentity(request);
-    return subscribeUrl(id?.email);
+    return await subscribeUrl(id?.email);
   })
 
   // demo checkout — opening the subscribe url books a Pantheon Pro sub for the signed-in email.
@@ -73,11 +73,15 @@ const app = new Elysia()
     return { summary: nudgeSummary(results), results };
   }, { body: t.Object({ input: t.String() }) })
 
-  // stripe income webhook (demo mode parses directly; real mode verifies the signature)
-  .post("/webhooks/stripe", async ({ body, request }) => {
-    const evt = verifyAndParse(JSON.stringify(body), request.headers.get("stripe-signature") ?? undefined);
-    return handleStripeEvent(evt);
-  }, { body: t.Any() })
+  // stripe income webhook — raw body for signature verification (real mode); demo parses json
+  .post("/webhooks/stripe", async ({ body, request, status }) => {
+    try {
+      const evt = await verifyAndParse(String(body), request.headers.get("stripe-signature") ?? undefined);
+      return await handleStripeEvent(evt);
+    } catch (e) {
+      return status(400, { error: `webhook: ${String(e)}` });
+    }
+  }, { parse: "text" })
 
   // OpenAI-compatible inference gateway
   .post(

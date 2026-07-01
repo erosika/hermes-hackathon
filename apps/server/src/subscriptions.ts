@@ -28,6 +28,15 @@ export function cancelSubscription(id: string): boolean {
   return true;
 }
 
+// cancel every active sub for a customer (Stripe subscription.deleted).
+export function cancelByEmail(customerRef: string): number {
+  let n = 0;
+  for (const s of subs) {
+    if (s.status === "active" && s.customerRef === customerRef) { s.status = "canceled"; n++; }
+  }
+  return n;
+}
+
 export function listSubscriptions(): Subscription[] {
   return subs;
 }

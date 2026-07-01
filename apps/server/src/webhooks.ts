@@ -1,51 +1,48 @@
-// Stripe webhook handler — books subscription revenue.
-// customer pays (checkout / invoice) → income row + Pantheon Pro subscription activated.
-// demo-degrades: with no STRIPE_WEBHOOK_SECRET it parses raw JSON and never throws,
-// so the flow is drivable end-to-end without real Stripe keys.
+// Stripe webhook — books subscription revenue. real path verifies the signature with the
+// SDK (async / Web Crypto, Bun-safe); demo path parses raw JSON. never throws in demo.
+// requires the RAW request body for signature verification (the route passes it as text).
 
 import { type LedgerEntry, type Subscription } from "@hermetika/shared";
 import { recordIncome } from "./ledger";
-import { activateSubscription } from "./subscriptions";
-import { PLAN } from "./billing";
+import { activateSubscription, cancelByEmail } from "./subscriptions";
+import { PLAN, stripeClient } from "./billing";
 
 export interface StripeEventLike {
   type: string;
   data?: { object?: Record<string, any> };
 }
 
-// demo mode: JSON.parse only. with a secret set, verify the signature via Stripe's SDK.
-export function verifyAndParse(rawBody: string, signature?: string): StripeEventLike {
+export async function verifyAndParse(rawBody: string, signature?: string): Promise<StripeEventLike> {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) {
-    return JSON.parse(rawBody) as StripeEventLike; // demo mode — trust the body, never throw
+  const stripe = stripeClient();
+  if (secret && stripe && signature) {
+    // throws on a bad signature — caller returns 400.
+    return (await stripe.webhooks.constructEventAsync(rawBody, signature, secret)) as unknown as StripeEventLike;
   }
-
-  // real path: lazy-import so the SDK is only needed when a secret is configured (mirrors stripe.ts).
-  try {
-    const req = (globalThis as any).require as ((m: string) => any) | undefined;
-    const Stripe = req ? req("stripe") : undefined;
-    if (Stripe && signature) {
-      const client = new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
-      return client.webhooks.constructEvent(rawBody, signature, secret) as StripeEventLike;
-    }
-    console.warn("⚷ webhook: STRIPE_WEBHOOK_SECRET set but SDK/signature unavailable — falling back to parse");
-  } catch (e) {
-    console.warn(`⚷ webhook: signature verification unavailable (${String(e)}) — falling back to parse`);
-  }
-  return JSON.parse(rawBody) as StripeEventLike;
+  return JSON.parse(rawBody) as StripeEventLike; // demo mode — trust the body
 }
 
-const INCOME_EVENTS = new Set(["checkout.session.completed", "invoice.paid"]);
+const INCOME_EVENTS = new Set(["checkout.session.completed", "invoice.paid", "invoice.payment_succeeded"]);
+
+function emailOf(obj: Record<string, any>): string {
+  return obj.customer_email ?? obj.customer_details?.email ?? obj.metadata?.email ?? obj.customer ?? "anon";
+}
 
 export async function handleStripeEvent(evt: StripeEventLike): Promise<{ handled: boolean; note: string }> {
+  const obj = evt.data?.object ?? {};
+
+  if (evt.type === "customer.subscription.deleted") {
+    const n = cancelByEmail(emailOf(obj));
+    return { handled: true, note: `canceled ${n} sub(s)` };
+  }
+
   if (!INCOME_EVENTS.has(evt.type)) {
     return { handled: false, note: `ignored ${evt.type}` };
   }
 
-  const obj = evt.data?.object ?? {};
-  const cents = obj.amount_total ?? obj.amount_paid ?? 0; // Stripe amounts are in cents
+  const cents = obj.amount_total ?? obj.amount_paid ?? Math.round(PLAN.priceUsd * 100);
   const amountUsd = Number(cents) / 100;
-  const customerRef: string = obj.customer_email ?? obj.customer ?? "anon";
+  const customerRef = emailOf(obj);
 
   const entry: LedgerEntry = recordIncome(amountUsd, "stripe", `${PLAN.name} · ${customerRef}`);
   const sub: Subscription = activateSubscription(PLAN.slug, customerRef, amountUsd);
