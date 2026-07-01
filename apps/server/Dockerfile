@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json bun.lock tsconfig.json ./
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY apps/server/package.json ./apps/server/package.json
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # source
 COPY packages ./packages
