@@ -1,14 +1,17 @@
-import { THEMES, useTheme, type Theme } from "./ThemeProvider";
+import { Reorder } from "framer-motion";
+import { THEMES, FONTS, useTheme, type Theme, type Font } from "./ThemeProvider";
 import type { LayoutMode } from "./lib/TilingLayoutManager";
 import type { WinState } from "./Desktop";
 
 const THEME_LABEL: Record<Theme, string> = {
-  "workstation-dark": "dark",
-  "workstation-light": "light",
+  "sanzo-ember": "ember",
+  "sanzo-rose": "rose",
+  "sanzo-indigo": "indigo",
+  "sanzo-slate": "slate",
+  "sanzo-forest": "forest",
   quartz: "quartz",
-  sanzo: "sanzo",
 };
-
+const FONT_LABEL: Record<Font, string> = { departure: "departure", nous: "nous", taurus: "taurus" };
 const MODES: LayoutMode[] = ["tiled", "stacked", "monocle"];
 
 interface TopNavProps {
@@ -18,23 +21,32 @@ interface TopNavProps {
   onLayoutMode: (m: LayoutMode) => void;
   onFocus: (id: number) => void;
   onClose: (id: number) => void;
+  onReorder: (ids: number[]) => void;
 }
 
-export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, onClose }: TopNavProps) {
-  const { theme, setTheme } = useTheme();
+export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, onClose, onReorder }: TopNavProps) {
+  const { theme, setTheme, font, setFont } = useTheme();
+  const ids = windows.map((w) => w.id);
 
   return (
     <nav className="topnav">
       <span className="topnav-brand">HERMETIKA</span>
 
-      <div className="topnav-tabs">
+      <Reorder.Group as="div" axis="x" values={ids} onReorder={onReorder} className="topnav-tabs">
         {windows.map((w) => (
-          <div key={w.id} className={`tab ${w.id === activeId ? "active" : ""}`} onClick={() => onFocus(w.id)}>
+          <Reorder.Item
+            key={w.id}
+            value={w.id}
+            as="div"
+            className={`tab ${w.id === activeId ? "active" : ""}`}
+            onClick={() => onFocus(w.id)}
+            whileDrag={{ scale: 1.04 }}
+          >
             <span>{w.model.name}</span>
             <span className="x" onClick={(e) => { e.stopPropagation(); onClose(w.id); }}>×</span>
-          </div>
+          </Reorder.Item>
         ))}
-      </div>
+      </Reorder.Group>
 
       <div className="topnav-right">
         <div className="seg">
@@ -42,11 +54,12 @@ export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, o
             <button key={m} className={layoutMode === m ? "on" : ""} onClick={() => onLayoutMode(m)}>{m}</button>
           ))}
         </div>
-        <div className="seg">
-          {THEMES.map((t) => (
-            <button key={t} className={theme === t ? "on" : ""} onClick={() => setTheme(t)}>{THEME_LABEL[t]}</button>
-          ))}
-        </div>
+        <select className="pick" value={theme} onChange={(e) => setTheme(e.target.value as Theme)} title="theme">
+          {THEMES.map((t) => <option key={t} value={t}>{THEME_LABEL[t]}</option>)}
+        </select>
+        <select className="pick" value={font} onChange={(e) => setFont(e.target.value as Font)} title="font">
+          {FONTS.map((f) => <option key={f} value={f}>{FONT_LABEL[f]}</option>)}
+        </select>
       </div>
     </nav>
   );

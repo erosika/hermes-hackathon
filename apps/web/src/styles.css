@@ -4,76 +4,133 @@
 
 @font-face {
   font-family: "Departure Mono";
-  src: url("/fonts/DepartureMono-Regular.otf") format("opentype");
+  src: url("/fonts/DepartureMono-Regular.woff2") format("woff2"),
+       url("/fonts/DepartureMono-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Taurus Mono";
+  src: url("/fonts/TaurusMono.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-/* ── theme presets — token names kept stable so every component re-skins for free ── */
-:root,
-[data-theme="workstation-dark"] {
-  --bg: #1a1a1a;
-  --panel: #232730;
-  --line: #404752;
-  --ink: #f2f2f3;
-  --dim: #a8aaae;
-  --accent: #5b8ef4;      /* blue */
-  --accent-sage: #8faa8a;
-  --accent-rust: #e68a3f;
-  --accent-clay: #a79383;
-  --chrome-1: #404752;
-  --chrome-2: #a8aaae;
-  --chrome-3: #f2f2f3;
+/* ── shared scale + default font (font selector overrides --mono inline) ── */
+:root {
   --grid: 8px;
   --topbar-h: 40px;
   --radius: 3px;
-  --mono: "Departure Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --mono: "Departure Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-[data-theme="workstation-light"] {
-  --bg: #ffffff;
-  --panel: #fafafa;
-  --line: #e5e5e5;
-  --ink: #1a1a1a;
-  --dim: #666666;
-  --accent: #4169e1;
-  --accent-sage: #7a9b76;
-  --accent-rust: #d2691e;
-  --accent-clay: #8c7b6b;
-  --chrome-1: #e5e5e5;
-  --chrome-2: #666666;
-  --chrome-3: #1a1a1a;
+/* ── theme presets — authentic Sanzo Wada pigments (Dictionary of Color Combinations).
+   token names kept stable so every component re-skins for free. dark-first, calm contrast. ── */
+
+/* sanzo-ember — burnt sienna + vandyke brown + golden ochre (the owned temple) */
+:root,
+[data-theme="sanzo-ember"] {
+  --bg: #17100a;
+  --panel: #221a10;
+  --line: #3d2e1b;
+  --ink: #ecdcae;        /* ivory buff */
+  --dim: #a08658;        /* maple, dimmed */
+  --accent: #e0912f;     /* golden orange */
+  --accent-sage: #a9b56a;/* olive buff */
+  --accent-rust: #de4500;/* english red */
+  --accent-clay: #c2975a;/* maple */
+  --chrome-1: #3d2e1b;
+  --chrome-2: #c2a878;
+  --chrome-3: #f2e8cf;
 }
 
+/* sanzo-rose — eosine + cameo + grenadine (pink-centric) */
+[data-theme="sanzo-rose"] {
+  --bg: #1c0f18;
+  --panel: #2a1826;
+  --line: #47293f;
+  --ink: #f2d0dd;
+  --dim: #b08699;        /* light brown drab */
+  --accent: #ff5ec4;     /* eosine pink */
+  --accent-sage: #8fd9b0;
+  --accent-rust: #ff616b;/* grenadine */
+  --accent-clay: #e6adcf;/* cameo pink */
+  --chrome-1: #47293f;
+  --chrome-2: #c99bb4;
+  --chrome-3: #ffcfe4;
+}
+
+/* sanzo-indigo — deep indigo + grenadine pink + salvia blue (combo 21) */
+[data-theme="sanzo-indigo"] {
+  --bg: #080a24;
+  --panel: #12143a;
+  --line: #262a5c;
+  --ink: #cdd6f0;
+  --dim: #6a72a0;
+  --accent: #f56a86;     /* grenadine pink over indigo */
+  --accent-sage: #7fe0c0;
+  --accent-rust: #ff616b;
+  --accent-clay: #96bfe6;/* salvia blue */
+  --chrome-1: #262a5c;
+  --chrome-2: #8f9bd0;
+  --chrome-3: #e6ebff;
+}
+
+/* sanzo-slate — corinthian pink + slate + cerulian (combo 84) */
+[data-theme="sanzo-slate"] {
+  --bg: #0e1a22;
+  --panel: #16262f;
+  --line: #2b4350;
+  --ink: #b5d1cc;        /* neutral gray */
+  --dim: #5c7287;        /* plumbeous */
+  --accent: #ffa6d9;     /* corinthian pink */
+  --accent-sage: #29bdad;/* cerulian teal */
+  --accent-rust: #ff7399;/* coral red */
+  --accent-clay: #96bfe6;/* salvia */
+  --chrome-1: #2b4350;
+  --chrome-2: #8fb0aa;
+  --chrome-3: #d8ece7;
+}
+
+/* sanzo-forest — deep slate green + venice + calamine */
+[data-theme="sanzo-forest"] {
+  --bg: #0c1c15;
+  --panel: #132a20;
+  --line: #234a38;
+  --ink: #bfe8cc;
+  --dim: #65a98f;        /* artemesia */
+  --accent: #5fe0a0;     /* venice green, calmed */
+  --accent-sage: #a9d96a;
+  --accent-rust: #ffb852;/* cream yellow pop */
+  --accent-clay: #7fd9bf;/* calamine */
+  --chrome-1: #234a38;
+  --chrome-2: #7fc2a0;
+  --chrome-3: #d6f2e0;
+}
+
+/* quartz — refined near-black neutral (the retained quartz aesthetic) */
 [data-theme="quartz"] {
   --bg: #0a0b0d;
-  --panel: #111317;
-  --line: #20242b;
+  --panel: #121419;
+  --line: #23272f;
   --ink: #d7dadf;
   --dim: #6b7079;
-  --accent: #c9b6ff;
+  --accent: #b8a9e0;     /* silver-violet */
   --accent-sage: #9fe3b4;
-  --accent-rust: #e3c79f;
+  --accent-rust: #e3a17a;
   --accent-clay: #7d828b;
-  --chrome-1: #3a3f47;
-  --chrome-2: #7d828b;
-  --chrome-3: #c3c7cd;
-}
-
-[data-theme="sanzo"] {
-  --bg: #1a1714;
-  --panel: #241f1a;
-  --line: #3a3530;
-  --ink: #f0ede6;
-  --dim: #8a8279;
-  --accent: #d4a07a;      /* kuchiba ochre */
-  --accent-sage: #8a9b7e; /* matsu */
-  --accent-rust: #c87a7a; /* ebicha */
-  --accent-clay: #a79383;
-  --chrome-1: #3a3530;
-  --chrome-2: #8a8279;
-  --chrome-3: #f0ede6;
+  --chrome-1: #23272f;
+  --chrome-2: #8b929c;
+  --chrome-3: #e6edf3;
 }
 
 * { box-sizing: border-box; }
@@ -162,6 +219,22 @@ body {
 }
 .seg button:last-child { border-right: 0; }
 .seg button.on { background: var(--panel); color: var(--accent); }
+
+/* compact select — theme / font / model swap */
+.pick {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px 6px;
+  cursor: pointer;
+  max-width: 140px;
+}
+.pick:focus { outline: none; border-color: var(--accent); }
 
 /* ── sidebar (pantheon) ── */
 .sidebar {

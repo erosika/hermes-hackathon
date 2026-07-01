@@ -18,7 +18,6 @@ export function App() {
   useEffect(() => {
     const load = () => getModels().then(setModels).catch(() => {});
     void load();
-    // pantheon can grow live via the nudge flow; poll so new admissions appear.
     const id = setInterval(load, 8000);
     return () => clearInterval(id);
   }, []);
@@ -46,8 +45,26 @@ export function App() {
       return next;
     });
   const minimize = (id: number) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, isMinimized: !w.isMinimized } : w)));
-  const maximize = (id: number) =>
-    setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, isMaximized: !w.isMaximized, isMinimized: false } : w)));
+  const maximize = (id: number) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, isMaximized: !w.isMaximized, isMinimized: false } : w)));
+  const swapModel = (id: number, model: Model) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, model } : w)));
+  const reorder = (ids: number[]) => setWindows((ws) => ids.map((i) => ws.find((w) => w.id === i)).filter((w): w is WinState => !!w));
+
+  // keyboard controls — ignored while typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT" || t.tagName === "SELECT")) return;
+      if (!windows.length) return;
+      const i = windows.findIndex((w) => w.id === activeId);
+      if (e.key === "Escape" && activeId != null) { close(activeId); }
+      else if (e.key === "]") { const n = windows[(i + 1) % windows.length]; if (n) focus(n.id); }
+      else if (e.key === "[") { const n = windows[(i - 1 + windows.length) % windows.length]; if (n) focus(n.id); }
+      else if ((e.metaKey || e.ctrlKey) && (e.key === "m" || e.key === "M") && activeId != null) { e.preventDefault(); minimize(activeId); }
+      else if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && activeId != null) { e.preventDefault(); maximize(activeId); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [windows, activeId]);
 
   return (
     <ThemeProvider>
@@ -59,16 +76,19 @@ export function App() {
           onLayoutMode={setLayoutMode}
           onFocus={focus}
           onClose={close}
+          onReorder={reorder}
         />
         <Sidebar models={models} openSlugs={new Set(windows.map((w) => w.model.slug))} onOpen={openModel} />
         <Desktop
           windows={windows}
+          models={models}
           activeId={activeId}
           layoutMode={layoutMode}
           onFocus={focus}
           onClose={close}
           onMinimize={minimize}
           onMaximize={maximize}
+          onSwapModel={swapModel}
         />
         <StatusBar />
       </div>

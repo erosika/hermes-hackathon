@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type Model, PRICING } from "@hermetika/shared";
 import { createCheckout, laneLabel } from "./api";
 import { useChatStream } from "./useChatStream";
@@ -6,10 +6,13 @@ import { MercurySigil } from "./MercurySigil";
 
 const DEMO_INFERENCES = 20;
 
-export function SandboxWindow({ model }: { model: Model }) {
-  const { output, streaming, error, send } = useChatStream();
+export function SandboxWindow({ model, models, onSwap }: { model: Model; models: Model[]; onSwap: (m: Model) => void }) {
+  const { output, streaming, error, send, reset } = useChatStream();
   const [prompt, setPrompt] = useState("");
   const [used, setUsed] = useState(0);
+
+  // swapping the window's model starts a fresh transcript.
+  useEffect(() => { reset(); }, [model.slug, reset]);
 
   const price = model.priceUsd ?? PRICING.defaultMonthlyUsd;
   const left = Math.max(0, DEMO_INFERENCES - used);
@@ -36,7 +39,14 @@ export function SandboxWindow({ model }: { model: Model }) {
     <div className="sbx">
       <div className="sbx-meta">
         <div className="sigil"><MercurySigil size={40} accent /></div>
-        <span className="tag kind">{model.kind}</span>
+        <select
+          className="pick"
+          value={model.slug}
+          onChange={(e) => { const m = models.find((x) => x.slug === e.target.value); if (m) onSwap(m); }}
+          title="swap model"
+        >
+          {models.map((m) => <option key={m.slug} value={m.slug}>{m.name}</option>)}
+        </select>
         <span className={`label ${model.backend === "gpu" ? "backend-gpu" : "backend-proxy"}`}>{laneLabel(model.backendRef)}</span>
         <span className="sbx-price">${price}/mo</span>
         <button className="sub-btn" onClick={onSubscribe}>sub ${price}</button>
