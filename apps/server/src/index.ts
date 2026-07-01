@@ -196,9 +196,10 @@ const app = new Elysia()
       }
       const session = newSession(req.sessionId ?? `s_${req.model}`);
       const lastUser = [...req.messages].reverse().find((m) => m.role === "user");
+      // persist fire-and-forget — transcript storage must never block or break inference.
       if (email) {
-        await ensureSession(session.id, email, model.slug, lastUser?.content.slice(0, 80));
-        if (lastUser) await appendMessages(session.id, [{ role: "user", content: lastUser.content }]);
+        void ensureSession(session.id, email, model.slug, lastUser?.content.slice(0, 80)).catch(() => {});
+        if (lastUser) void appendMessages(session.id, [{ role: "user", content: lastUser.content }]).catch(() => {});
       }
 
       try {
@@ -226,7 +227,7 @@ const app = new Elysia()
               }
             },
             flush() {
-              if (email && assistant) void appendMessages(session.id, [{ role: "assistant", content: assistant }]);
+              if (email && assistant) void appendMessages(session.id, [{ role: "assistant", content: assistant }]).catch(() => {});
             },
           });
           return new Response(res.body?.pipeThrough(persist), {
@@ -238,7 +239,7 @@ const app = new Elysia()
         const json = await res.json();
         const reply = json?.choices?.[0]?.message?.content;
         if (email && typeof reply === "string") {
-          await appendMessages(session.id, [{ role: "assistant", content: reply, tokens: json?.usage?.total_tokens }]);
+          void appendMessages(session.id, [{ role: "assistant", content: reply, tokens: json?.usage?.total_tokens }]).catch(() => {});
         }
         return new Response(JSON.stringify(json), {
           status: res.status,
