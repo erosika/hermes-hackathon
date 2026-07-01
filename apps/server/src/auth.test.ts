@@ -22,7 +22,7 @@ describe("supabase token verification", () => {
       const apikey = (init?.headers as Record<string, string>)?.apikey;
       expect(apikey).toBe("anon-test");
       return new Response(JSON.stringify({ id: "u1", email: "Eri@X" }), { status: 200 });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
     const { readIdentity } = await import("./auth");
     const id = await readIdentity(bearer("tok"));
     expect(seen).toBe("http://sb.test/auth/v1/user");
@@ -31,14 +31,14 @@ describe("supabase token verification", () => {
   });
 
   test("supabase rejects (401) → null", async () => {
-    globalThis.fetch = (async () => new Response("no", { status: 401 })) as typeof fetch;
+    globalThis.fetch = (async () => new Response("no", { status: 401 })) as unknown as typeof fetch;
     const { readIdentity } = await import("./auth");
     expect(await readIdentity(bearer("bad"))).toBeNull();
   });
 
   test("no bearer → null, no supabase call", async () => {
     let called = false;
-    globalThis.fetch = (async () => { called = true; return new Response("{}"); }) as typeof fetch;
+    globalThis.fetch = (async () => { called = true; return new Response("{}"); }) as unknown as typeof fetch;
     const { readIdentity } = await import("./auth");
     expect(await readIdentity(bearer())).toBeNull();
     expect(called).toBe(false);
