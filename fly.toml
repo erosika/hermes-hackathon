@@ -9,7 +9,7 @@ primary_region = "sjc"
 [env]
   PORT = "3001"
   APP_URL = "https://hermetika.io"
-  CORS_ORIGIN = "https://hermetika.io"
+  CORS_ORIGIN = "https://hermetika.io,https://hermetika.pages.dev"
 
 [http_service]
   internal_port = 3001
