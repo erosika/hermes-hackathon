@@ -4,8 +4,8 @@
   "type": "module",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "bun run --filter '*' dev",
-    "dev:server": "bun run --filter './apps/server' dev",
+    "dev": "bun run dev:server & bun run dev:web",
+    "dev:server": "cd apps/server && bun --watch src/index.ts",
     "dev:web": "bun run --filter './apps/web' dev",
     "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json"
