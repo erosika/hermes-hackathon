@@ -15,19 +15,10 @@ export interface Backend {
 
 const env = process.env;
 
+// two owned DGX Sparks, each behind a bearer-auth Caddy over Tailscale. failover twins.
 export const BACKENDS: Record<string, Backend> = {
-  // owned DGX Spark, two lanes over Tailscale
-  spark: { baseUrl: env.SPARK_VLLM_URL, runtime: "vllm", paid: false, failover: "brev" },
-  sparktail: { baseUrl: env.SPARK_OLLAMA_URL, runtime: "ollama", paid: false, failover: "brev" },
-
-  // paid GPU
-  brev: { baseUrl: env.BREV_BASE_URL, runtime: "vllm", paid: true, apiKey: env.BREV_API_KEY },
-  modal: { baseUrl: env.MODAL_BASE_URL, runtime: "vllm", paid: true, apiKey: env.MODAL_API_KEY },
-
-  // proxied
-  nvidia: { baseUrl: "https://integrate.api.nvidia.com/v1", runtime: "proxy", paid: true, apiKey: env.NVIDIA_API_KEY },
-  nous: { baseUrl: "https://inference-api.nousresearch.com/v1", runtime: "proxy", paid: true, apiKey: env.NOUS_API_KEY },
-  openrouter: { baseUrl: "https://openrouter.ai/api/v1", runtime: "proxy", paid: true, apiKey: env.OPENROUTER_API_KEY },
+  spark: { baseUrl: env.SPARK_URL, runtime: "ollama", paid: false, apiKey: env.SPARK_TOKEN, failover: "sparktail" },
+  sparktail: { baseUrl: env.SPARKTAIL_URL, runtime: "ollama", paid: false, apiKey: env.SPARKTAIL_TOKEN, failover: "spark" },
 };
 
 export function getBackend(provider: string): Backend | undefined {
