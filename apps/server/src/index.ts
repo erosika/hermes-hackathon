@@ -28,7 +28,14 @@ if (process.env.SEED_DEMO_REVENUE !== "0") {
 startHealthLoop();
 
 // prod: set CORS_ORIGIN=https://hermetika.io (comma-sep for multiple). unset = allow all (dev).
-const corsOrigin = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim()) : true;
+// allow any hermetika.pages.dev / hermetika.io subdomain (preview deploys) + explicit env origins.
+const corsOrigin = process.env.CORS_ORIGIN
+  ? [
+      /^https:\/\/([a-z0-9-]+\.)?hermetika\.pages\.dev$/,
+      /^https:\/\/([a-z0-9-]+\.)?hermetika\.io$/,
+      ...process.env.CORS_ORIGIN.split(",").map((s) => s.trim()),
+    ]
+  : true;
 
 // input/output guards — protect the GPUs from oversized prompts + runaway generations.
 const MAX_INPUT_CHARS = Number(process.env.MAX_INPUT_CHARS ?? 24000); // ~6k tokens
@@ -242,6 +249,6 @@ const app = new Elysia()
 
   .listen(port);
 
-console.log(`⚷ hermetika gateway → http://localhost:${port}  (${MODELS.length} models, ${PROFILES.length} operators)`);
+console.log(`☿ hermetika gateway → http://localhost:${port}  (${MODELS.length} models, ${PROFILES.length} operators)`);
 
 export type App = typeof app;
