@@ -90,7 +90,7 @@ export function SandboxWindow({ model, models, onSwap }: { model: FullModel; mod
           <div className="quota-bar" style={{ flex: 1 }}>
             <div className={`quota-fill ${!pro && pct <= 20 ? "low" : ""}`} style={{ width: `${pct}%` }} />
           </div>
-          <span className="label">{pro ? "unlimited" : remaining == null ? "free tier" : `${remaining} left`}</span>
+          <span className="label">{pro ? "unlimited" : `${remaining ?? FREE_PER_MODEL}/${FREE_PER_MODEL} free · this model`}</span>
         </div>
       </form>
     </div>

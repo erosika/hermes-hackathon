@@ -16,7 +16,7 @@ export function checkFreeTier(identity: string, modelSlug: string): RateResult {
   const key = `${identity}|${modelSlug}`;
   const n = used.get(key) ?? 0;
   if (n >= FREE.perModel) {
-    return { allowed: false, remaining: 0, reason: `free limit: ${FREE.perModel} messages per model — subscribe for unlimited` };
+    return { allowed: false, remaining: 0, reason: "free limit reached for this model — subscribe for unlimited or try another" };
   }
   used.set(key, n + 1);
   return { allowed: true, remaining: FREE.perModel - (n + 1) };

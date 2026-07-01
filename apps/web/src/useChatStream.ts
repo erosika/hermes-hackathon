@@ -50,7 +50,7 @@ export function useChatStream(): UseChatStream {
 
       if (res.status === 402) {
         setRemaining(0);
-        setError("free limit reached — subscribe for unlimited");
+        setError("free limit reached for this model — subscribe for unlimited or try another");
         return "";
       }
       if (!res.ok) throw new Error(`/v1/chat/completions → ${res.status}`);
