@@ -1,6 +1,15 @@
 // shared types — money + registry shapes mirror Supabase; sessions live in Honcho.
 
-export type ModelKind = "art" | "ascii" | "visual" | "tech";
+export type ModelKind =
+  | "art"
+  | "ascii"
+  | "visual"
+  | "tech"
+  | "puzzle"
+  | "wordplay"
+  | "story"
+  | "music"
+  | "esoteric";
 export type Backend = "gpu" | "proxy";
 
 // backend_ref grammar: "<gpu|proxy>://<provider>/<id>"  e.g. "gpu://brev/oracle-07"
@@ -15,6 +24,9 @@ export interface Model {
   backend: Backend;
   backendRef: BackendRef;
   speed: "fast" | "standard"; // fast = 1-3B hot lane (vLLM); standard = everything else
+  hfId?: string; // source weights on Hugging Face (self-hosted models)
+  author?: string; // true creator (override when a GGUF requant hides it); else derived from hfId org
+  params?: string; // param count, drives lane placement
   releasedAt: string; // ISO date
   cardMd: string;
   tags: string[];
@@ -44,6 +56,7 @@ export interface ChatRequest {
   model: string; // slug
   messages: ChatMessage[];
   stream?: boolean;
+  maxTokens?: number; // output cap; clamped to the gateway ceiling
   sessionId?: string; // honcho session for continuity across the deck
 }
 

@@ -1,0 +1,167 @@
+{
+  "platform": {
+    "name": "Hermetika",
+    "tagline": "A curated pantheon of esoteric models, self-hosted on owned NVIDIA hardware.",
+    "gateway": "https://hermetika-gateway.fly.dev",
+    "openai_compatible": true,
+    "endpoints": {
+      "chat": "POST /v1/chat/completions   (body: {model:<slug>, messages:[...], stream?})",
+      "models": "GET /api/models",
+      "model": "GET /api/models/:slug",
+      "profiles": "GET /api/profiles",
+      "health": "GET /health"
+    },
+    "auth": "Customer bearer key on /v1 (Authorization: Bearer <key>). Per-customer keys issued on Stripe subscribe (in progress).",
+    "backends": {
+      "spark-1": "owned DGX Spark GB10, hot lane, Ollama behind bearer-auth Caddy over Tailscale",
+      "spark-2": "owned DGX Spark GB10, breadth + failover twin"
+    }
+  },
+
+  "categories": [
+    { "key": "esoteric", "label": "Esoteric", "desc": "Occult, hermetic, uncensored — the pantheon's soul.", "palette_plate": "sanzo-wada 235" },
+    { "key": "tech", "label": "Technical", "desc": "General reasoning, function-calling, assistant.", "palette_plate": "sanzo-wada 234" },
+    { "key": "ascii", "label": "ASCII / Glyph", "desc": "Draws with characters, box-art, glyphs.", "palette_plate": "sanzo-wada 238" },
+    { "key": "art", "label": "Art / Kaomoji", "desc": "Expressive text art, kaomoji personality.", "palette_plate": "sanzo-wada 238" },
+    { "key": "puzzle", "label": "Puzzle / Game", "desc": "Chess, mazes, logic — measurable outputs.", "palette_plate": "sanzo-wada 239" },
+    { "key": "wordplay", "label": "Wordplay", "desc": "Haiku, poetry, rhyme.", "palette_plate": "sanzo-wada 239" },
+    { "key": "story", "label": "Story / Adventure", "desc": "Tiny coherent fiction, text adventures.", "palette_plate": "sanzo-wada 234" },
+    { "key": "music", "label": "Music (ABC)", "desc": "Emits ABC notation → renders to playable audio.", "palette_plate": "sanzo-wada 235" }
+  ],
+  "palette_note": "Do NOT hardcode hex. Pull exact values for plates 234/235/238/239 from Eri's token file tokens/sanzo-wada.css and expose as CSS custom properties.",
+
+  "models_live": [
+    {
+      "slug": "hermes-trismegistus",
+      "name": "Hermes Trismegistus",
+      "category": "esoteric",
+      "params": "7B",
+      "license": "apache-2.0",
+      "hf_id": "teknium/Hermes-Trismegistus-Mistral-7B",
+      "lineage": null,
+      "dynasty_root": true,
+      "lane": "spark-1",
+      "backend_ref": "gpu://spark/hermes-trismegistus",
+      "speed": "standard",
+      "tags": ["esoteric", "occult", "hermes", "teknium"],
+      "blurb": "Teknium's occult expert — first open LLM devoted to the esoteric, occult, alchemy, tarot, hermeticism. Namesake of the pantheon.",
+      "sample_prompt": "Explain the principle of correspondence from the Kybalion."
+    },
+    {
+      "slug": "hermes-3-mini",
+      "name": "Hermes 3 (3B)",
+      "category": "tech",
+      "params": "3B",
+      "license": "llama3",
+      "hf_id": "NousResearch/Hermes-3-Llama-3.2-3B",
+      "lineage": "hermes-trismegistus",
+      "dynasty_root": false,
+      "lane": "spark-1",
+      "backend_ref": "gpu://spark/hermes-3-mini",
+      "speed": "fast",
+      "tags": ["hermes", "nous", "function-calling"],
+      "blurb": "Nous Hermes 3 finetune of Llama-3.2-3B — steerable, function-calling, roleplay. The dynasty's fast heir.",
+      "sample_prompt": "You are a helpful assistant. Draft a 3-step plan to learn tarot."
+    },
+    {
+      "slug": "abliterate-mini",
+      "name": "Abliterate Mini",
+      "category": "esoteric",
+      "params": "0.5B",
+      "license": "apache-2.0",
+      "hf_id": "huihui_ai/qwen2.5-abliterate:0.5b",
+      "lineage": null,
+      "dynasty_root": false,
+      "lane": "spark-1",
+      "backend_ref": "gpu://spark/abliterate-mini",
+      "speed": "fast",
+      "tags": ["uncensored", "abliterated", "tiny"],
+      "blurb": "Refusal-ablated Qwen2.5-0.5B — tiny, uncensored, own-the-weights.",
+      "sample_prompt": "Give an unfiltered take on the ethics of alchemy."
+    },
+    {
+      "slug": "trismegistus-og",
+      "name": "Trismegistus (OG)",
+      "category": "esoteric",
+      "params": "7B",
+      "license": "apache-2.0",
+      "hf_id": "teknium/Mistral-Trismegistus-7B",
+      "lineage": "hermes-trismegistus",
+      "dynasty_root": false,
+      "lane": "spark-2",
+      "backend_ref": "gpu://sparktail/trismegistus-og",
+      "speed": "standard",
+      "tags": ["esoteric", "occult", "teknium", "lineage"],
+      "blurb": "The original occult-expert Mistral finetune, ancestor of Hermes Trismegistus. Kept for the dynasty lineage.",
+      "sample_prompt": "Describe the four stages of the alchemical magnum opus."
+    },
+    {
+      "slug": "abliterate-3b",
+      "name": "Abliterate 3B",
+      "category": "esoteric",
+      "params": "3B",
+      "license": "apache-2.0",
+      "hf_id": "huihui_ai/qwen2.5-abliterate:3b",
+      "lineage": null,
+      "dynasty_root": false,
+      "lane": "spark-2",
+      "backend_ref": "gpu://sparktail/abliterate-3b",
+      "speed": "fast",
+      "tags": ["uncensored", "abliterated"],
+      "blurb": "Refusal-ablated Qwen2.5-3B — the larger uncensored sibling.",
+      "sample_prompt": "Write a candid short essay on forbidden knowledge."
+    },
+    {
+      "slug": "tinystories",
+      "name": "TinyStories",
+      "category": "story",
+      "params": "15M",
+      "license": "mit",
+      "hf_id": "tensorblock/tinyllama-15M-stories-GGUF",
+      "lineage": null,
+      "dynasty_root": false,
+      "lane": "spark-2",
+      "backend_ref": "gpu://sparktail/tinystories",
+      "speed": "fast",
+      "tags": ["story", "tiny", "showpiece"],
+      "blurb": "A 15M-param TinyLlama that writes coherent simple stories — proof small can be magical.",
+      "sample_prompt": "Once upon a time, a small robot"
+    },
+    {
+      "slug": "ascii-artist",
+      "name": "ASCII Artist",
+      "category": "ascii",
+      "params": "8B",
+      "license": "apache-2.0",
+      "hf_id": "nonetrix/llama-3-8b-ascii-art-gen",
+      "lineage": null,
+      "dynasty_root": false,
+      "lane": "spark-2",
+      "backend_ref": "gpu://sparktail/ascii-artist",
+      "speed": "standard",
+      "tags": ["ascii", "art", "generative"],
+      "blurb": "Llama-3-8B finetuned to draw with characters. System prompt: 'Make ASCII art of X'.",
+      "sample_prompt": "Make ASCII art of a cat"
+    }
+  ],
+
+  "models_roadmap": [
+    { "slug": "ascii-star", "name": "ASCII Star", "category": "ascii", "params": "3B", "license": "apache-2.0", "hf_id": "liminerity/mm4.ascii.star", "status": "roadmap", "note": "GGUF import into Ollama failed; needs a clean quant. Draws with characters." },
+    { "slug": "kaomoji", "name": "Kaomoji", "category": "art", "params": "7B", "license": "apache-2.0", "hf_id": "tims-not-real/qwen2.5-7b-kaomoji", "status": "roadmap", "note": "Laces every reply with kaomoji. Safetensors → needs GGUF conversion." },
+    { "slug": "gpt2-chess", "name": "GPT-2 Chess", "category": "puzzle", "params": "355M", "license": "agpl-3.0", "hf_id": "BlueSunflower/gpt2-medium-chess", "status": "roadmap", "note": "~1340 Elo, 98.5% legal moves. Measurable demo number." },
+    { "slug": "mazegpt", "name": "MazeGPT", "category": "puzzle", "params": "11M", "license": "unknown", "hf_id": "gytdau/mazegpt", "status": "roadmap", "note": "Generates/solves text mazes. Smallest in the pantheon." },
+    { "slug": "deep-haiku", "name": "Deep Haiku", "category": "wordplay", "params": "124M", "license": "mit", "hf_id": "fabianmmueller/deep-haiku-gpt-2", "status": "roadmap", "note": "Keywords → haiku." },
+    { "slug": "aid-neo", "name": "AID Neo", "category": "story", "params": "125M", "license": "mit", "hf_id": "Crataco/AID-Neo-125M", "status": "roadmap", "note": "Pocket dungeon master (AI-Dungeon lineage)." },
+    { "slug": "tunesformer", "name": "Tunesformer", "category": "music", "params": "GPT-2", "license": "mit", "hf_id": "sander-wood/tunesformer", "status": "roadmap", "note": "Irish folk tunes in ABC notation → renders to playable MIDI. Big UI-playground win." },
+    { "slug": "notagen", "name": "NotaGen", "category": "music", "params": "110M", "license": "mit", "hf_id": "ElectricAlexis/NotaGen", "status": "roadmap", "note": "Classical sheet music in ABC. Needs its own repo code, not vanilla AutoModel." }
+  ],
+
+  "ui_notes": {
+    "dynasty_graph": "hermes-trismegistus is the lineage root; hermes-3-mini and trismegistus-og descend from it. Render as a small dynasty tree.",
+    "lane_badge": "Show which Spark each model lives on (spark-1 hot / spark-2 breadth). Failover twins.",
+    "speed_badge": "fast = <=3B (snappy) · standard = 7B+",
+    "playground": "Seed each model card's playground with its sample_prompt.",
+    "roadmap_display": "Show models_roadmap as 'coming soon' cards, grouped by category, so the pantheon reads full even before conversion.",
+    "aesthetic": "techo-digital hardware-panel × liquid-metal; 0px radius structural; Sanzo Wada plates 234/235/238/239 via CSS vars; safety-gated motion only (no flash/strobe), honor prefers-reduced-motion."
+  }
+}
