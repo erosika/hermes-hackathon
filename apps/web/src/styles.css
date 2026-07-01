@@ -400,6 +400,11 @@ body {
 .sbx-info .label { margin-right: 4px; }
 .sbx-info a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted color-mix(in srgb, var(--accent) 50%, transparent); }
 .sbx-info a:hover { color: var(--chrome-3); }
+.sbx-info .dot { display: inline-block; width: 7px; height: 7px; border-radius: 999px; margin-right: 5px; vertical-align: middle; }
+.sbx-info .dot.on { background: var(--accent-sage); }
+.sbx-info .dot.off { background: var(--dim); }
+.sbx-desc { margin: 0; font-size: 13px; line-height: 1.55; color: var(--dim); }
+.sbx-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* multi-turn transcript — continuous terminal flow, no bubbles */
 .transcript {

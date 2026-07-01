@@ -21,6 +21,7 @@ export function SandboxWindow({ model, models, onSwap }: { model: FullModel; mod
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, output]);
 
   const price = model.priceUsd ?? PRICING.defaultMonthlyUsd;
+  const desc = (model.cardMd ?? "").replace(/^#.*\n?/, "").trim(); // drop the card heading
   const spent = !pro && remaining === 0;
   const pct = pro ? 100 : remaining == null ? 100 : (remaining / FREE_LIFETIME) * 100;
 
@@ -59,13 +60,22 @@ export function SandboxWindow({ model, models, onSwap }: { model: FullModel; mod
       </div>
 
       <div className="sbx-info">
+        {model.resident !== undefined && (
+          <span><span className={`dot ${model.resident ? "on" : "off"}`} /> {model.resident ? "resident" : "paged"}</span>
+        )}
         {model.author && <span><span className="label">author</span> {model.author}</span>}
         {model.params && <span><span className="label">params</span> {model.params}</span>}
         {model.license && <span><span className="label">license</span> {model.license}</span>}
         {model.lineage && <span><span className="label">lineage</span> {model.lineage}</span>}
         {model.kind && <span><span className="label">kind</span> {model.kind}</span>}
+        {model.releasedAt && <span><span className="label">released</span> {model.releasedAt}</span>}
         {model.hfUrl && <a href={model.hfUrl} target="_blank" rel="noopener noreferrer">hugging face ↗</a>}
       </div>
+
+      {desc && <p className="sbx-desc">{desc}</p>}
+      {model.tags && model.tags.length > 0 && (
+        <div className="sbx-tags">{model.tags.map((t) => <span className="tag" key={t}>{t}</span>)}</div>
+      )}
 
       <div className="transcript" ref={scrollRef}>
         {messages.length === 0 && !streaming && <div className="transcript-empty label">speak to the model — enter to send</div>}
