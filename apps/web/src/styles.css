@@ -543,7 +543,9 @@ body {
 .credits-sub { margin-top: -4px; }
 .credits-list { display: flex; flex-direction: column; gap: calc(var(--grid) * 1.25); margin-top: var(--grid); }
 .credit-row { display: flex; flex-direction: column; gap: 3px; }
-.credit-k { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.credit-k { display: flex; align-items: center; gap: 7px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.credit-icon { display: inline-flex; color: var(--chrome-3); }
+.nous-mark { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--chrome-3); border: 1px solid var(--line); border-radius: 2px; padding: 1px 4px; }
 .credit-v { font-size: 12px; line-height: 1.5; color: var(--dim); }
 /* delicate dotted separator */
 .credits-rule { height: 0; border-top: 1px dotted var(--line); margin: calc(var(--grid) * 0.5) 0; }

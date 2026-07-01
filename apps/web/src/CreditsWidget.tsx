@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { StripeIcon, NvidiaIcon, NousMark } from "./Icons";
 
 // bottom-right corner widget — credits + a bit about the maker (à la techo-digi's MakeathonPopup).
-const CREDITS: [string, string][] = [
-  ["stripe", "billing + agent spend — Stripe Skills let the agent buy compute, provision SaaS, pay its own bills"],
-  ["nvidia", "inference compute — Nemotron 3 Ultra + hosted models, sandboxed with NemoClaw"],
-  ["hermes agent", "runs the platform — admits models, watches the ledger, tops up its own float. no human in the hot loop"],
+const CREDITS: { icon: ReactNode; k: string; v: string }[] = [
+  { icon: <StripeIcon />, k: "stripe", v: "billing + agent spend — Stripe Skills let the agent buy compute, provision SaaS, pay its own bills" },
+  { icon: <NvidiaIcon />, k: "nvidia", v: "inference compute — Nemotron 3 Ultra + hosted models, sandboxed with NemoClaw" },
+  { icon: <NousMark />, k: "hermes agent", v: "runs the platform — admits models, watches the ledger, tops up its own float. no human in the hot loop" },
 ];
 
 export function CreditsWidget() {
@@ -31,9 +32,9 @@ export function CreditsWidget() {
             <div className="credits-sub label">operated by hermes · not a human</div>
 
             <div className="credits-list">
-              {CREDITS.map(([k, v]) => (
+              {CREDITS.map(({ icon, k, v }) => (
                 <div className="credit-row" key={k}>
-                  <span className="credit-k">{k}</span>
+                  <span className="credit-k"><span className="credit-icon">{icon}</span>{k}</span>
                   <span className="credit-v">{v}</span>
                 </div>
               ))}
