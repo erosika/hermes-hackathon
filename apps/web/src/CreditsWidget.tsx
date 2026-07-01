@@ -2,11 +2,11 @@ import { useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { StripeIcon, NvidiaIcon, NousMark } from "./Icons";
 
-// bottom-right corner widget — credits + a bit about the maker (à la techo-digi's MakeathonPopup).
+// bottom-right corner widget — plain description of what's actually running.
 const CREDITS: { icon: ReactNode; k: string; v: string }[] = [
-  { icon: <StripeIcon />, k: "stripe", v: "billing + agent spend — Stripe Skills let the agent buy compute, provision SaaS, pay its own bills" },
-  { icon: <NvidiaIcon />, k: "nvidia", v: "inference compute — Nemotron 3 Ultra + hosted models, sandboxed with NemoClaw" },
-  { icon: <NousMark />, k: "hermes agent", v: "runs the platform — admits models, watches the ledger, tops up its own float. no human in the hot loop" },
+  { icon: <NvidiaIcon />, k: "nvidia", v: "all inference runs on two DGX Sparks I own — the models are self-hosted over Tailscale, not rented cloud" },
+  { icon: <StripeIcon />, k: "stripe", v: "a $2/mo subscription (Stripe Checkout + billing portal) pays for the compute" },
+  { icon: <NousMark />, k: "hermes", v: "the operator layer — curates which models are served and gates access to subscribers" },
 ];
 
 export function CreditsWidget() {
@@ -29,7 +29,7 @@ export function CreditsWidget() {
               <span className="mark-sm">⚷ HERMETIKA</span>
               <button className="win-btn close" onClick={() => setOpen(false)} title="close">×</button>
             </div>
-            <div className="credits-sub label">operated by hermes · not a human</div>
+            <div className="credits-sub label">self-hosted model inference · subscription-funded</div>
 
             <div className="credits-list">
               {CREDITS.map(({ icon, k, v }) => (
@@ -45,8 +45,7 @@ export function CreditsWidget() {
             <div className="credits-about">
               <span className="label">about</span>
               <p>
-                built by <b>eri</b> — founder &amp; builder at Plastic Labs (Honcho, Cosmania).
-                building for the agentic world; interfaces that breathe. <span className="dim">@erosika</span>
+                built by <b>eri</b> — engineer at Plastic Labs. <span className="dim">@erosika</span>
               </p>
             </div>
 
