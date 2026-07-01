@@ -94,6 +94,42 @@ export const MODELS: Model[] = [
     tags: ["uncensored", "abliterated"],
     enabled: true,
   },
+  {
+    id: "m_tinystories",
+    slug: "tinystories",
+    name: "TinyStories",
+    kind: "story",
+    lineage: null,
+    backend: "gpu",
+    backendRef: "gpu://sparktail/tinystories",
+    speed: "fast",
+    hfId: "tensorblock/tinyllama-15M-stories-GGUF",
+    license: "mit",
+    params: "15M",
+    releasedAt: "2023-05-01",
+    cardMd:
+      "# TinyStories\nA 15M-param TinyLlama that writes coherent simple stories — proof small can be magical. spark-2.",
+    tags: ["story", "tiny", "showpiece"],
+    enabled: true,
+  },
+  {
+    id: "m_ascii_artist",
+    slug: "ascii-artist",
+    name: "ASCII Artist",
+    kind: "ascii",
+    lineage: null,
+    backend: "gpu",
+    backendRef: "gpu://sparktail/ascii-artist",
+    speed: "standard",
+    hfId: "nonetrix/llama-3-8b-ascii-art-gen",
+    license: "apache-2.0",
+    params: "8B",
+    releasedAt: "2024-04-01",
+    cardMd:
+      "# ASCII Artist\nLlama-3-8B finetuned to draw with characters. System prompt: 'Make ASCII art of X'. spark-2.",
+    tags: ["ascii", "art", "generative"],
+    enabled: true,
+  },
 ];
 
 // operator — one custom Hermes profile runs the pantheon (curate, watch, swap, notify).

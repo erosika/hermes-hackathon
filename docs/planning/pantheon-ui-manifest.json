@@ -110,17 +110,47 @@
       "tags": ["uncensored", "abliterated"],
       "blurb": "Refusal-ablated Qwen2.5-3B — the larger uncensored sibling.",
       "sample_prompt": "Write a candid short essay on forbidden knowledge."
+    },
+    {
+      "slug": "tinystories",
+      "name": "TinyStories",
+      "category": "story",
+      "params": "15M",
+      "license": "mit",
+      "hf_id": "tensorblock/tinyllama-15M-stories-GGUF",
+      "lineage": null,
+      "dynasty_root": false,
+      "lane": "spark-2",
+      "backend_ref": "gpu://sparktail/tinystories",
+      "speed": "fast",
+      "tags": ["story", "tiny", "showpiece"],
+      "blurb": "A 15M-param TinyLlama that writes coherent simple stories — proof small can be magical.",
+      "sample_prompt": "Once upon a time, a small robot"
+    },
+    {
+      "slug": "ascii-artist",
+      "name": "ASCII Artist",
+      "category": "ascii",
+      "params": "8B",
+      "license": "apache-2.0",
+      "hf_id": "nonetrix/llama-3-8b-ascii-art-gen",
+      "lineage": null,
+      "dynasty_root": false,
+      "lane": "spark-2",
+      "backend_ref": "gpu://sparktail/ascii-artist",
+      "speed": "standard",
+      "tags": ["ascii", "art", "generative"],
+      "blurb": "Llama-3-8B finetuned to draw with characters. System prompt: 'Make ASCII art of X'.",
+      "sample_prompt": "Make ASCII art of a cat"
     }
   ],
 
   "models_roadmap": [
     { "slug": "ascii-star", "name": "ASCII Star", "category": "ascii", "params": "3B", "license": "apache-2.0", "hf_id": "liminerity/mm4.ascii.star", "status": "roadmap", "note": "GGUF import into Ollama failed; needs a clean quant. Draws with characters." },
-    { "slug": "ascii-artist", "name": "ASCII Artist", "category": "ascii", "params": "8B", "license": "apache-2.0", "hf_id": "nonetrix/llama-3-8b-ascii-art-gen", "status": "roadmap", "note": "Most-downloaded dedicated ASCII model; system prompt = 'Make ASCII art'." },
     { "slug": "kaomoji", "name": "Kaomoji", "category": "art", "params": "7B", "license": "apache-2.0", "hf_id": "tims-not-real/qwen2.5-7b-kaomoji", "status": "roadmap", "note": "Laces every reply with kaomoji. Safetensors → needs GGUF conversion." },
     { "slug": "gpt2-chess", "name": "GPT-2 Chess", "category": "puzzle", "params": "355M", "license": "agpl-3.0", "hf_id": "BlueSunflower/gpt2-medium-chess", "status": "roadmap", "note": "~1340 Elo, 98.5% legal moves. Measurable demo number." },
     { "slug": "mazegpt", "name": "MazeGPT", "category": "puzzle", "params": "11M", "license": "unknown", "hf_id": "gytdau/mazegpt", "status": "roadmap", "note": "Generates/solves text mazes. Smallest in the pantheon." },
     { "slug": "deep-haiku", "name": "Deep Haiku", "category": "wordplay", "params": "124M", "license": "mit", "hf_id": "fabianmmueller/deep-haiku-gpt-2", "status": "roadmap", "note": "Keywords → haiku." },
-    { "slug": "tinystories", "name": "TinyStories", "category": "story", "params": "33M", "license": "mit", "hf_id": "roneneldan/TinyStories-33M", "status": "roadmap", "note": "33M model that writes coherent stories — the 'small is magic' showpiece." },
     { "slug": "aid-neo", "name": "AID Neo", "category": "story", "params": "125M", "license": "mit", "hf_id": "Crataco/AID-Neo-125M", "status": "roadmap", "note": "Pocket dungeon master (AI-Dungeon lineage)." },
     { "slug": "tunesformer", "name": "Tunesformer", "category": "music", "params": "GPT-2", "license": "mit", "hf_id": "sander-wood/tunesformer", "status": "roadmap", "note": "Irish folk tunes in ABC notation → renders to playable MIDI. Big UI-playground win." },
     { "slug": "notagen", "name": "NotaGen", "category": "music", "params": "110M", "license": "mit", "hf_id": "ElectricAlexis/NotaGen", "status": "roadmap", "note": "Classical sheet music in ABC. Needs its own repo code, not vanilla AutoModel." }
