@@ -44,7 +44,7 @@ async function residentSlugs(): Promise<Set<string>> {
         signal: AbortSignal.timeout(4000),
       });
       const j = (await r.json()) as { models?: { name: string }[] };
-      for (const m of j.models ?? []) names.add(m.name.split(":")[0]);
+      for (const m of j.models ?? []) names.add(m.name.split(":")[0]!);
     } catch {}
   }
   residentCache = { at: Date.now(), set: names };
