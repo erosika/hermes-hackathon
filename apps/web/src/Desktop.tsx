@@ -17,6 +17,7 @@ interface DesktopProps {
   models: Model[];
   activeId: number | null;
   layoutMode: LayoutMode;
+  masterRatio: number;
   onFocus: (id: number) => void;
   onClose: (id: number) => void;
   onMinimize: (id: number) => void;
@@ -24,10 +25,10 @@ interface DesktopProps {
   onSwapModel: (id: number, model: Model) => void;
 }
 
-export function Desktop({ windows, models, activeId, layoutMode, onFocus, onClose, onMinimize, onMaximize, onSwapModel }: DesktopProps) {
+export function Desktop({ windows, models, activeId, layoutMode, masterRatio, onFocus, onClose, onMinimize, onMaximize, onSwapModel }: DesktopProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const mgr = useMemo(() => new TilingLayoutManager({ topBarHeight: 0, gaps: { inner: 8, outer: 8 } }), []);
+  const mgr = useMemo(() => new TilingLayoutManager({ topBarHeight: 0, gaps: { inner: 8, outer: 8 }, masterRatio }), [masterRatio]);
 
   useEffect(() => {
     const el = ref.current;

@@ -40,7 +40,7 @@ export async function subscribeUrl(email?: string): Promise<SubscribeLink> {
             currency: "usd",
             unit_amount: Math.round(PLAN.priceUsd * 100),
             recurring: { interval: "month" },
-            product_data: { name: `${PLAN.name} — ${PLAN.blurb}` },
+            product_data: { name: "Hermetika", description: `${PLAN.name} · ${PLAN.blurb}` },
           },
         },
       ],
@@ -61,4 +61,17 @@ export async function subscribeUrl(email?: string): Promise<SubscribeLink> {
 
   const q = `plan=${PLAN.slug}&price=${PLAN.priceUsd}${email ? `&email=${encodeURIComponent(email)}` : ""}`;
   return { url: `/checkout/demo?${q}`, plan: PLAN.slug, priceUsd: PLAN.priceUsd, live: false };
+}
+
+// Stripe Billing Portal — where a customer manages or cancels their subscription.
+// resolves the Stripe customer by email; null if Stripe/customer isn't there yet.
+export async function portalUrl(email: string): Promise<string | null> {
+  const s = stripeClient();
+  if (!s) return null;
+  const appUrl = process.env.APP_URL ?? "http://localhost:5173";
+  const found = await s.customers.list({ email, limit: 1 });
+  const customer = found.data[0];
+  if (!customer) return null;
+  const session = await s.billingPortal.sessions.create({ customer: customer.id, return_url: appUrl });
+  return session.url;
 }

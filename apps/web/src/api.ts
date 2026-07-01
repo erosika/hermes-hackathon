@@ -41,6 +41,7 @@ export const getBackends = () => getJson<unknown>("/api/backends");
 export const getRevenue = () => getJson<RevenueView>("/api/revenue");
 export const getSubscriptions = () => getJson<Subscription[]>("/api/subscriptions");
 export const getSubscribe = () => getJson<SubscribeLink>("/api/subscribe");
+export const getPortal = () => getJson<{ url: string }>("/api/portal");
 
 // derive the serving lane from a model's backend_ref for honest labels.
 export function laneLabel(backendRef: string): string {

@@ -7,13 +7,20 @@ import { TopNav } from "./TopNav";
 import { Sidebar } from "./Sidebar";
 import { Desktop, type WinState } from "./Desktop";
 import { StatusBar } from "./StatusBar";
+import { ShortcutsHelp } from "./ShortcutsHelp";
+import { useWindowKeys } from "./useWindowKeys";
 import type { LayoutMode } from "./lib/TilingLayoutManager";
+
+const LAYOUTS: LayoutMode[] = ["tiled", "stacked", "monocle"];
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
 export function App() {
   const [models, setModels] = useState<Model[]>([]);
   const [windows, setWindows] = useState<WinState[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("tiled");
+  const [masterRatio, setMasterRatio] = useState(0.55);
+  const [showHelp, setShowHelp] = useState(false);
   const nextId = useRef(1);
 
   useEffect(() => {
@@ -50,50 +57,83 @@ export function App() {
   const swapModel = (id: number, model: Model) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, model } : w)));
   const reorder = (ids: number[]) => setWindows((ws) => ids.map((i) => ws.find((w) => w.id === i)).filter((w): w is WinState => !!w));
 
-  // keyboard controls — ignored while typing in a field.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
-      if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT" || t.tagName === "SELECT")) return;
-      if (!windows.length) return;
-      const i = windows.findIndex((w) => w.id === activeId);
-      if (e.key === "Escape" && activeId != null) { close(activeId); }
-      else if (e.key === "]") { const n = windows[(i + 1) % windows.length]; if (n) focus(n.id); }
-      else if (e.key === "[") { const n = windows[(i - 1 + windows.length) % windows.length]; if (n) focus(n.id); }
-      else if ((e.metaKey || e.ctrlKey) && (e.key === "m" || e.key === "M") && activeId != null) { e.preventDefault(); minimize(activeId); }
-      else if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && activeId != null) { e.preventDefault(); maximize(activeId); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [windows, activeId]);
+  // ── keyboard handlers ──
+  const idx = () => windows.findIndex((w) => w.id === activeId);
+  const cycleFocus = (dir: -1 | 1) => {
+    if (!windows.length) return;
+    const n = windows[(idx() + dir + windows.length) % windows.length];
+    if (n) focus(n.id);
+  };
+  const moveActive = (dir: -1 | 1) =>
+    setWindows((ws) => {
+      const i = ws.findIndex((w) => w.id === activeId);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= ws.length) return ws;
+      const copy = [...ws];
+      [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+      return copy;
+    });
+  const focusN = (n: number) => { const w = windows[n - 1]; if (w) focus(w.id); };
+  const promoteMaster = () =>
+    setWindows((ws) => {
+      const i = ws.findIndex((w) => w.id === activeId);
+      if (i <= 0) return ws;
+      const copy = [...ws];
+      const [a] = copy.splice(i, 1);
+      copy.unshift(a!);
+      return copy;
+    });
+  const cycleLayout = () => setLayoutMode((m) => LAYOUTS[(LAYOUTS.indexOf(m) + 1) % LAYOUTS.length]!);
+  const adjustMaster = (d: number) => setMasterRatio((r) => Number(clamp(r + d, 0.2, 0.8).toFixed(2)));
+  const focusInput = () => (document.querySelector(".win.active textarea") as HTMLElement | null)?.focus();
+
+  useWindowKeys({
+    count: windows.length,
+    activeId,
+    helpOpen: showHelp,
+    cycleFocus,
+    moveActive,
+    focusN,
+    maximize: () => activeId != null && maximize(activeId),
+    minimize: () => activeId != null && minimize(activeId),
+    close: () => activeId != null && close(activeId),
+    focusInput,
+    cycleLayout,
+    adjustMaster,
+    promoteMaster,
+    toggleHelp: () => setShowHelp((v) => !v),
+  });
 
   return (
     <ThemeProvider>
       <AuthProvider>
-      <div className="shell">
-        <TopNav
-          windows={windows}
-          activeId={activeId}
-          layoutMode={layoutMode}
-          onLayoutMode={setLayoutMode}
-          onFocus={focus}
-          onClose={close}
-          onReorder={reorder}
-        />
-        <Sidebar models={models} openSlugs={new Set(windows.map((w) => w.model.slug))} onOpen={openModel} />
-        <Desktop
-          windows={windows}
-          models={models}
-          activeId={activeId}
-          layoutMode={layoutMode}
-          onFocus={focus}
-          onClose={close}
-          onMinimize={minimize}
-          onMaximize={maximize}
-          onSwapModel={swapModel}
-        />
-        <StatusBar />
-      </div>
+        <div className="shell">
+          <TopNav
+            windows={windows}
+            activeId={activeId}
+            layoutMode={layoutMode}
+            onLayoutMode={setLayoutMode}
+            onFocus={focus}
+            onClose={close}
+            onReorder={reorder}
+            onHelp={() => setShowHelp(true)}
+          />
+          <Sidebar models={models} openSlugs={new Set(windows.map((w) => w.model.slug))} onOpen={openModel} />
+          <Desktop
+            windows={windows}
+            models={models}
+            activeId={activeId}
+            layoutMode={layoutMode}
+            masterRatio={masterRatio}
+            onFocus={focus}
+            onClose={close}
+            onMinimize={minimize}
+            onMaximize={maximize}
+            onSwapModel={swapModel}
+          />
+          <StatusBar />
+        </div>
+        {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
       </AuthProvider>
     </ThemeProvider>
   );

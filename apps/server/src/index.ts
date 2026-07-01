@@ -5,7 +5,7 @@ import { dispatch } from "./router";
 import { startHealthLoop, snapshot } from "./health";
 import { incomeEntries, incomeUsd, recordIncome } from "./ledger";
 import { activateSubscription, listSubscriptions, subscriptionSummary, isSubscribed } from "./subscriptions";
-import { subscribeUrl, PLAN } from "./billing";
+import { subscribeUrl, portalUrl, PLAN } from "./billing";
 import { readIdentity, authConfigured } from "./auth";
 import { checkFreeTier, FREE } from "./ratelimit";
 import { newSession } from "./honcho";
@@ -55,6 +55,12 @@ const app = new Elysia()
   .get("/api/subscribe", async ({ request }) => {
     const id = await readIdentity(request);
     return await subscribeUrl(id?.email);
+  })
+  .get("/api/portal", async ({ request, status }) => {
+    const id = await readIdentity(request);
+    if (!id) return status(401, { error: "sign in first" });
+    const url = await portalUrl(id.email);
+    return url ? { url } : status(404, { error: "no billing account yet — subscribe first" });
   })
 
   // demo checkout — opening the subscribe url books a Pantheon Pro sub for the signed-in email.
