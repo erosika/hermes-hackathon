@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export const THEMES = ["sanzo-slate", "sanzo-rose", "sanzo-indigo", "sanzo-slate", "sanzo-forest", "quartz"] as const;
+export const THEMES = ["sanzo-slate", "sanzo-ember", "sanzo-rose", "sanzo-indigo", "sanzo-forest", "quartz"] as const;
 export type Theme = (typeof THEMES)[number];
 
 const T_KEY = "hermetika-theme";
