@@ -18,8 +18,16 @@ if (process.env.SEED_DEMO_REVENUE !== "0") {
 startHealthLoop();
 startStewardLoop();
 
+// customer auth on /v1 — shared keys for now; builder swaps for Stripe-issued per-customer keys.
+const gatewayKeys = (process.env.GATEWAY_KEYS ?? "").split(",").filter(Boolean);
+
 const app = new Elysia()
   .use(cors())
+  .onBeforeHandle(({ request, path, set }) => {
+    if (!path.startsWith("/v1/") || gatewayKeys.length === 0) return; // open until keys set
+    const key = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (!gatewayKeys.includes(key)) return (set.status = 401), { error: "invalid api key" };
+  })
   .get("/health", () => ({ ok: true, models: MODELS.length, profiles: PROFILES.length }))
 
   // registry
