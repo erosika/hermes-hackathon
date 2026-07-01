@@ -26,12 +26,13 @@ export interface Model {
   speed: "fast" | "standard"; // fast = 1-3B hot lane (vLLM); standard = everything else
   hfId?: string; // source weights on Hugging Face (self-hosted models)
   author?: string; // true creator (override when a GGUF requant hides it); else derived from hfId org
-  license?: string; // curator license-check gate before admission
   params?: string; // param count, drives lane placement
   releasedAt: string; // ISO date
   cardMd: string;
   tags: string[];
   enabled: boolean;
+  license?: string; // SPDX id — the admission gate (apache-2.0, mit, ...); null/absent = unvetted
+  priceUsd?: number; // monthly subscription price; falls back to PRICING.defaultMonthlyUsd
 }
 
 export type ProfileRole = "orchestrator" | "curator" | "ops" | "steward";
@@ -59,23 +60,32 @@ export interface ChatRequest {
   sessionId?: string; // honcho session for continuity across the deck
 }
 
-// the survival ledger
-export type LedgerKind = "income" | "spend";
+// subscription revenue log — one income row per Stripe payment.
+export type LedgerKind = "income";
 
 export interface LedgerEntry {
   id: string;
   kind: LedgerKind;
   amountUsd: number;
-  ref: string; // stripe | brev | api
+  ref: string; // stripe
   profile: string | null;
   note: string;
   createdAt: string;
 }
 
-// demo-tuned float mechanics for the survival loop
-export const FLOAT = {
-  lowWater: 20,
-  topUp: 25,
-  tickMs: 10_000, // steward evaluates float on this cadence
-  cooldownMs: 30_000, // min gap between autonomous top-ups so one dip = one charge
+// customer side — one Pantheon Pro subscription per customer.
+export type SubscriptionStatus = "active" | "canceled" | "past_due";
+
+export interface Subscription {
+  id: string;
+  modelSlug: string; // plan slug (pantheon-pro)
+  customerRef: string; // stripe customer id or email
+  status: SubscriptionStatus;
+  priceUsd: number;
+  createdAt: string;
+}
+
+// per-model display price (the pantheon shows these; billing is one platform plan).
+export const PRICING = {
+  defaultMonthlyUsd: 2,
 } as const;

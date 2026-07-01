@@ -1,0 +1,4 @@
+# Cloudflare Pages — deploy from apps/web: `bun run build && wrangler pages deploy dist`
+name = "hermetika"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-07-01"

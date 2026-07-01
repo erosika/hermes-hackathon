@@ -1,16 +1,30 @@
+# Fly app for the Hermetika gateway → api.hermetika.io
+# deploy from repo root: `fly launch --no-deploy` (first time) then `fly deploy`
 app = "hermetika-gateway"
-primary_region = "ewr"
+primary_region = "sjc"
 
 [build]
+  dockerfile = "apps/server/Dockerfile"
+
+[env]
+  PORT = "3001"
+  APP_URL = "https://hermetika.io"
+  CORS_ORIGIN = "https://hermetika.io"
 
 [http_service]
-  internal_port = 8080
+  internal_port = 3001
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
 
-[env]
-  PORT = "8080"
-  SEED_DEMO_REVENUE = "0"
-  RATE_LIMIT_RPM = "30"
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "5s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

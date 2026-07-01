@@ -1,34 +1,49 @@
-import type { LedgerEntry, Model } from "@hermetika/shared";
+import type { LedgerEntry, Model, Profile, Subscription } from "@hermetika/shared";
+import { authHeader } from "./supabase";
+import { API_BASE } from "./config";
 
-// thin client over the gateway's REST surface.
+// thin client over the gateway's REST surface. auth is the Supabase JWT (Bearer).
 
-export interface LedgerView {
-  float: number; // compute-credit wallet
-  income: number; // customer revenue in
-  spend: number; // real USD out (steward top-ups)
-  net: number; // income − spend, the money-shot
+export interface RevenueView {
+  mrr: number;
+  active: number;
+  total: number;
+  recent: Subscription[];
+  incomeTotal: number;
   entries: LedgerEntry[];
 }
 
-export interface StewardView {
-  topUp: boolean;
-  amount: number;
-  float: number;
-  lastAction: { at: string; amount: number; floatBefore: number; floatAfter: number } | null;
+export interface SubscribeLink {
+  url: string;
+  plan: string;
+  priceUsd: number;
+  live: boolean;
+}
+
+export interface Me {
+  email: string | null;
+  subscribed: boolean;
+  authConfigured?: boolean;
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const r = await fetch(path);
+  const r = await fetch(`${API_BASE}${path}`, { headers: authHeader() });
   if (!r.ok) throw new Error(`${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }
 
+export const getMe = () => getJson<Me>("/api/auth/me");
+
 export const getModels = () => getJson<Model[]>("/api/models");
-export const getLedger = () => getJson<LedgerView>("/api/ledger");
-export const getSteward = () => getJson<StewardView>("/api/steward");
+export const getModel = (slug: string) => getJson<Model>(`/api/models/${slug}`);
+export const getProfiles = () => getJson<Profile[]>("/api/profiles");
+export const getBackends = () => getJson<unknown>("/api/backends");
+export const getRevenue = () => getJson<RevenueView>("/api/revenue");
+export const getSubscriptions = () => getJson<Subscription[]>("/api/subscriptions");
+export const getSubscribe = () => getJson<SubscribeLink>("/api/subscribe");
+export const getPortal = () => getJson<{ url: string }>("/api/portal");
 
 // derive the serving lane from a model's backend_ref for honest labels.
-// gpu://spark → owned hot · gpu://sparktail → owned tail · gpu://brev → paid burst · proxy://x → proxied
 export function laneLabel(backendRef: string): string {
   const provider = backendRef.split("://")[1]?.split("/")[0] ?? "";
   switch (provider) {

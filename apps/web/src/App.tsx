@@ -1,52 +1,140 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Model } from "@hermetika/shared";
-import { getModels, laneLabel } from "./api";
-import { LedgerMeter } from "./LedgerMeter";
+import { getModels } from "./api";
+import { ThemeProvider } from "./ThemeProvider";
+import { AuthProvider } from "./AuthProvider";
+import { TopNav } from "./TopNav";
+import { Sidebar } from "./Sidebar";
+import { Desktop, type WinState } from "./Desktop";
+import { StatusBar } from "./StatusBar";
+import { ShortcutsHelp } from "./ShortcutsHelp";
+import { useWindowKeys } from "./useWindowKeys";
+import type { LayoutMode } from "./lib/TilingLayoutManager";
+
+const LAYOUTS: LayoutMode[] = ["tiled", "stacked", "monocle"];
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
 export function App() {
   const [models, setModels] = useState<Model[]>([]);
-  const [err, setErr] = useState<string | null>(null);
+  const [windows, setWindows] = useState<WinState[]>([]);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("tiled");
+  const [masterRatio, setMasterRatio] = useState(0.55);
+  const [showHelp, setShowHelp] = useState(false);
+  const nextId = useRef(1);
 
   useEffect(() => {
-    getModels()
-      .then(setModels)
-      .catch((e) => setErr(String(e)));
+    const load = () => getModels().then(setModels).catch(() => {});
+    void load();
+    const id = setInterval(load, 8000);
+    return () => clearInterval(id);
   }, []);
 
+  const openModel = (model: Model) => {
+    const existing = windows.find((w) => w.model.slug === model.slug);
+    if (existing) {
+      setActiveId(existing.id);
+      setWindows((ws) => ws.map((w) => (w.id === existing.id ? { ...w, isMinimized: false } : w)));
+      return;
+    }
+    const id = nextId.current++;
+    setWindows((ws) => [...ws, { id, model, isMinimized: false, isMaximized: false }]);
+    setActiveId(id);
+  };
+
+  const focus = (id: number) => {
+    setActiveId(id);
+    setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, isMinimized: false } : w)));
+  };
+  const close = (id: number) =>
+    setWindows((ws) => {
+      const next = ws.filter((w) => w.id !== id);
+      setActiveId((a) => (a === id ? next[next.length - 1]?.id ?? null : a));
+      return next;
+    });
+  const minimize = (id: number) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, isMinimized: !w.isMinimized } : w)));
+  const maximize = (id: number) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, isMaximized: !w.isMaximized, isMinimized: false } : w)));
+  const swapModel = (id: number, model: Model) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, model } : w)));
+  const reorder = (ids: number[]) => setWindows((ws) => ids.map((i) => ws.find((w) => w.id === i)).filter((w): w is WinState => !!w));
+
+  // ── keyboard handlers ──
+  const idx = () => windows.findIndex((w) => w.id === activeId);
+  const cycleFocus = (dir: -1 | 1) => {
+    if (!windows.length) return;
+    const n = windows[(idx() + dir + windows.length) % windows.length];
+    if (n) focus(n.id);
+  };
+  const moveActive = (dir: -1 | 1) =>
+    setWindows((ws) => {
+      const i = ws.findIndex((w) => w.id === activeId);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= ws.length) return ws;
+      const copy = [...ws];
+      [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+      return copy;
+    });
+  const focusN = (n: number) => { const w = windows[n - 1]; if (w) focus(w.id); };
+  const promoteMaster = () =>
+    setWindows((ws) => {
+      const i = ws.findIndex((w) => w.id === activeId);
+      if (i <= 0) return ws;
+      const copy = [...ws];
+      const [a] = copy.splice(i, 1);
+      copy.unshift(a!);
+      return copy;
+    });
+  const cycleLayout = () => setLayoutMode((m) => LAYOUTS[(LAYOUTS.indexOf(m) + 1) % LAYOUTS.length]!);
+  const adjustMaster = (d: number) => setMasterRatio((r) => Number(clamp(r + d, 0.2, 0.8).toFixed(2)));
+  const focusInput = () => (document.querySelector(".win.active textarea") as HTMLElement | null)?.focus();
+
+  useWindowKeys({
+    count: windows.length,
+    activeId,
+    helpOpen: showHelp,
+    cycleFocus,
+    moveActive,
+    focusN,
+    maximize: () => activeId != null && maximize(activeId),
+    minimize: () => activeId != null && minimize(activeId),
+    close: () => activeId != null && close(activeId),
+    focusInput,
+    cycleLayout,
+    adjustMaster,
+    promoteMaster,
+    toggleHelp: () => setShowHelp((v) => !v),
+  });
+
   return (
-    <div className="chassis">
-      <header className="bar">
-        <span className="mark">HERMETIKA</span>
-        <span className="label">model pantheon · operated by hermes</span>
-      </header>
-
-      <LedgerMeter />
-
-      <div className="label" style={{ margin: "16px 0" }}>
-        pantheon — {models.length} models
-      </div>
-
-      {err && <div className="label">offline · {err}</div>}
-
-      <div className="grid">
-        {models.map((m) => (
-          <div className="cell" key={m.id}>
-            <span className="name">{m.name}</span>
-            <span className={`tag kind`}>{m.kind}</span>
-            <span className="meta">
-              {m.tags.map((t) => (
-                <span className="tag" key={t}>{t}</span>
-              ))}
-            </span>
-            <span
-              className={`label ${m.backend === "gpu" ? "backend-gpu" : "backend-proxy"}`}
-              style={{ marginTop: "auto" }}
-            >
-              {laneLabel(m.backendRef)} · {m.releasedAt}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
+    <ThemeProvider>
+      <AuthProvider>
+        <div className="shell">
+          <TopNav
+            windows={windows}
+            activeId={activeId}
+            layoutMode={layoutMode}
+            onLayoutMode={setLayoutMode}
+            onFocus={focus}
+            onClose={close}
+            onReorder={reorder}
+            onHelp={() => setShowHelp(true)}
+          />
+          <Sidebar models={models} openSlugs={new Set(windows.map((w) => w.model.slug))} onOpen={openModel} />
+          <Desktop
+            windows={windows}
+            models={models}
+            activeId={activeId}
+            layoutMode={layoutMode}
+            masterRatio={masterRatio}
+            onFocus={focus}
+            onClose={close}
+            onMinimize={minimize}
+            onMaximize={maximize}
+            onSwapModel={swapModel}
+          />
+          <StatusBar />
+        </div>
+        {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
