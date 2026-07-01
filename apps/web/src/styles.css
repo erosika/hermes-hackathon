@@ -1,36 +1,30 @@
 /* Hermetika shell — workstation-ui-shell lineage: tiling window manager,
-   Departure Mono, semantic tokens, theme picker. Motion is snappy but never
+   Constantia display + Corbi Mono S, semantic tokens, theme picker. Motion is snappy but never
    flashing; all transitions respect prefers-reduced-motion (epilepsy rule). */
 
+/* Constantia (Peter Wiegel, free) for display/headers; Corbi Mono S (OFL) for everything else. */
 @font-face {
-  font-family: "Departure Mono";
-  src: url("/fonts/DepartureMono-Regular.woff2") format("woff2"),
-       url("/fonts/DepartureMono-Regular.otf") format("opentype");
+  font-family: "Constantia";
+  src: url("/fonts/Constantia.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "JetBrains Mono";
-  src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Taurus Mono";
-  src: url("/fonts/TaurusMono.otf") format("opentype");
+  font-family: "Corbi Mono S";
+  src: url("/fonts/CorbiMonoS-Regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-/* ── shared scale + default font (font selector overrides --mono inline) ── */
+/* ── shared scale + fonts (one mono, one display) ── */
 :root {
   --grid: 8px;
   --topbar-h: 40px;
   --radius: 3px;
-  --mono: "Departure Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --mono: "Corbi Mono S", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "Constantia", Georgia, "Times New Roman", serif;
 }
 
 /* ── theme presets — authentic Sanzo Wada pigments (Dictionary of Color Combinations).
@@ -179,8 +173,9 @@ body {
   background: var(--panel);
 }
 .topnav-brand {
-  font-size: 14px;
-  letter-spacing: 0.22em;
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.06em;
   font-weight: 700;
   color: var(--chrome-3);
 }
@@ -542,7 +537,7 @@ body {
   display: flex; flex-direction: column; gap: var(--grid);
 }
 .credits-head { display: flex; align-items: center; justify-content: space-between; }
-.mark-sm { font-size: 13px; letter-spacing: 0.18em; color: var(--chrome-3); font-weight: 600; }
+.mark-sm { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.04em; color: var(--chrome-3); font-weight: 700; }
 .credits-sub { margin-top: -4px; }
 .credits-list { display: flex; flex-direction: column; gap: calc(var(--grid) * 1.25); margin-top: var(--grid); }
 .credit-row { display: flex; flex-direction: column; gap: 3px; }

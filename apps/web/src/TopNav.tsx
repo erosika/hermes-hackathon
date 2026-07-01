@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Reorder } from "framer-motion";
-import { THEMES, FONTS, useTheme, type Theme, type Font } from "./ThemeProvider";
+import { THEMES, useTheme, type Theme } from "./ThemeProvider";
 import { useAuth } from "./AuthProvider";
 import { AccountMenu } from "./AccountMenu";
 import type { LayoutMode } from "./lib/TilingLayoutManager";
@@ -66,7 +66,6 @@ const THEME_LABEL: Record<Theme, string> = {
   "sanzo-forest": "forest",
   quartz: "quartz",
 };
-const FONT_LABEL: Record<Font, string> = { departure: "departure", nous: "nous", taurus: "taurus" };
 const MODES: LayoutMode[] = ["tiled", "stacked", "monocle"];
 
 interface TopNavProps {
@@ -81,7 +80,7 @@ interface TopNavProps {
 }
 
 export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, onClose, onReorder, onHelp }: TopNavProps) {
-  const { theme, setTheme, font, setFont } = useTheme();
+  const { theme, setTheme } = useTheme();
   const ids = windows.map((w) => w.id);
 
   return (
@@ -112,9 +111,6 @@ export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, o
         </div>
         <select className="pick" value={theme} onChange={(e) => setTheme(e.target.value as Theme)} title="theme">
           {THEMES.map((t) => <option key={t} value={t}>{THEME_LABEL[t]}</option>)}
-        </select>
-        <select className="pick" value={font} onChange={(e) => setFont(e.target.value as Font)} title="font">
-          {FONTS.map((f) => <option key={f} value={f}>{FONT_LABEL[f]}</option>)}
         </select>
         <button className="seg-btn" onClick={onHelp} title="keyboard shortcuts (?)">?</button>
         <AuthCluster />
