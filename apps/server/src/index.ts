@@ -5,7 +5,7 @@ import { dispatch } from "./router";
 import { getBackend } from "./backends";
 import { startHealthLoop, snapshot } from "./health";
 import { incomeEntries, incomeUsd, recordIncome } from "./ledger";
-import { activateSubscription, listSubscriptions, subscriptionSummary, isSubscribed } from "./subscriptions";
+import { activateSubscription, listSubscriptions, subscriptionSummary, isSubscribed, loadSubs } from "./subscriptions";
 import { subscribeUrl, portalUrl, PLAN, stripeClient } from "./billing";
 import { readIdentity, authConfigured } from "./auth";
 import { checkFreeTier, FREE } from "./ratelimit";
@@ -16,6 +16,9 @@ import { nudge, nudgeSummary } from "./nudge";
 import type { ChatRequest, Model } from "@hermetika/shared";
 
 const port = Number(process.env.PORT ?? 3001);
+
+// hydrate the subscription cache from Supabase (no-op without SUPABASE_SERVICE_KEY).
+void loadSubs();
 
 // demo subscribers so MRR isn't empty — opt-in only (SEED_DEMO_REVENUE=1); off in prod.
 if (process.env.SEED_DEMO_REVENUE === "1") {

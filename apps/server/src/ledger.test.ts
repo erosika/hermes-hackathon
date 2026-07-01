@@ -58,6 +58,7 @@ describe("stripe webhook → revenue", () => {
 
 describe("subscribe link", () => {
   test("demo mode returns a local stub url", async () => {
+    delete process.env.STRIPE_SECRET_KEY; // isolate from a real key in .env
     const link = await subscribeUrl();
     expect(link.live).toBe(false);
     expect(link.url).toContain("/checkout/demo");
