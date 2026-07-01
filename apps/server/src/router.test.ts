@@ -33,30 +33,28 @@ const sparkModel = (): Model => ({
 const nousModel = (): Model => ({ ...sparkModel(), backend: "proxy", backendRef: "proxy://nous/hermes-4" });
 
 describe("resolve — failover (hermetika swings a dead lane to its twin)", () => {
-  const brevUrl = BACKENDS.brev!.baseUrl;
+  const twinUrl = BACKENDS.sparktail!.baseUrl;
   afterEach(() => {
-    BACKENDS.brev!.baseUrl = brevUrl; // restore
+    BACKENDS.sparktail!.baseUrl = twinUrl; // restore
   });
 
-  test("unhealthy spark with a reachable failover swings to brev", () => {
-    // health has no probes in-test → every backend reads unhealthy; give brev a url so it's a valid target
-    BACKENDS.brev!.baseUrl = "http://brev.test/v1";
+  test("unhealthy spark with a reachable failover swings to sparktail", () => {
+    // health has no probes in-test → every backend reads unhealthy; give the twin a url so it's a valid target
+    BACKENDS.sparktail!.baseUrl = "http://sparktail.test/v1";
     const r = resolve(sparkModel());
-    expect(r.provider).toBe("brev");
+    expect(r.provider).toBe("sparktail");
     expect(r.failedOver).toBe(true);
     expect(r.upstreamModel).toBe("x"); // model id carries across the swing
   });
 
   test("no failover target configured → stays on primary", () => {
-    BACKENDS.brev!.baseUrl = undefined; // failover unreachable
+    BACKENDS.sparktail!.baseUrl = undefined; // failover unreachable
     const r = resolve(sparkModel());
     expect(r.provider).toBe("spark");
     expect(r.failedOver).toBe(false);
   });
 
-  test("a proxy backend with no failover declared stays put", () => {
-    const r = resolve(nousModel());
-    expect(r.provider).toBe("nous");
-    expect(r.failedOver).toBe(false);
+  test("a ref to a removed backend (proxy dropped) throws", () => {
+    expect(() => resolve(nousModel())).toThrow(/no backend configured/);
   });
 });
