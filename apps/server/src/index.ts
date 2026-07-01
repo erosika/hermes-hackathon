@@ -6,7 +6,7 @@ import { getBackend } from "./backends";
 import { startHealthLoop, snapshot } from "./health";
 import { incomeEntries, incomeUsd, recordIncome } from "./ledger";
 import { activateSubscription, listSubscriptions, subscriptionSummary, isSubscribed } from "./subscriptions";
-import { subscribeUrl, portalUrl, PLAN } from "./billing";
+import { subscribeUrl, portalUrl, PLAN, stripeClient } from "./billing";
 import { readIdentity, authConfigured } from "./auth";
 import { checkFreeTier, FREE } from "./ratelimit";
 import { newSession } from "./honcho";
@@ -121,6 +121,15 @@ const app = new Elysia()
   .get("/api/subscribe", async ({ request }) => {
     const id = await readIdentity(request);
     return await subscribeUrl(id?.email);
+  })
+  // demo-mode grant — books a sub for the signed-in email without Stripe. refused when live.
+  .post("/api/subscribe/demo", async ({ request, status }) => {
+    if (stripeClient()) return status(400, { error: "stripe is live — use checkout" });
+    const id = await readIdentity(request);
+    if (!id?.email) return status(401, { error: "sign in first" });
+    activateSubscription(PLAN.slug, id.email, PLAN.priceUsd);
+    recordIncome(PLAN.priceUsd, "demo", `${PLAN.name} · ${id.email}`);
+    return { ok: true, subscribed: true };
   })
   .get("/api/portal", async ({ request, status }) => {
     const id = await readIdentity(request);

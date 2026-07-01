@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getRevenue, getSubscribe, type RevenueView, type SubscribeLink } from "./api";
+import { getRevenue, getSubscribe, subscribeDemo, type RevenueView, type SubscribeLink } from "./api";
 import { useAuth } from "./AuthProvider";
 import { CreditsWidget } from "./CreditsWidget";
 
@@ -27,10 +27,15 @@ export function StatusBar() {
   const usd = (n?: number) => `$${(n ?? 0).toFixed(2)}`;
   const price = link ? `$${link.priceUsd}/mo` : "";
 
-  const onSubscribe = () => {
+  const onSubscribe = async () => {
     if (!link) return;
+    if (!link.live) {
+      // demo mode — grant server-side and flip to pro instantly, no Stripe.
+      try { await subscribeDemo(); } catch { /* gateway offline */ }
+      await refresh();
+      return;
+    }
     window.open(link.url, "_blank", "noopener");
-    // demo checkout completes in the new tab; reflect the new sub shortly after.
     setTimeout(() => void refresh(), 2500);
   };
 

@@ -1,13 +1,29 @@
 import { useState } from "react";
+import { PRICING } from "@hermetika/shared";
 import { useAuth } from "./AuthProvider";
-import { getPortal, getSubscribe } from "./api";
+import { getPortal, getSubscribe, subscribeDemo } from "./api";
 
 export function AccountMenu({ onClose }: { onClose: () => void }) {
-  const { email, subscribed, signOut } = useAuth();
+  const { email, subscribed, signOut, refresh } = useAuth();
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // manage/cancel opens the Stripe Billing Portal; if there's no customer yet, offer checkout.
+  // subscribe — demo mode grants server-side; live opens Stripe checkout.
+  const subscribe = async () => {
+    setBusy(true);
+    setNote(null);
+    try {
+      const link = await getSubscribe();
+      if (!link.live) { await subscribeDemo(); await refresh(); }
+      else window.open(link.url, "_blank", "noopener");
+    } catch {
+      setNote("billing unavailable — try again");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // manage/cancel opens the Stripe Billing Portal (live only).
   const manage = async () => {
     setBusy(true);
     setNote(null);
@@ -15,12 +31,7 @@ export function AccountMenu({ onClose }: { onClose: () => void }) {
       const { url } = await getPortal();
       window.open(url, "_blank", "noopener");
     } catch {
-      try {
-        const link = await getSubscribe();
-        window.open(link.url, "_blank", "noopener");
-      } catch {
-        setNote("billing unavailable — try again");
-      }
+      setNote("no billing account yet");
     } finally {
       setBusy(false);
     }
@@ -44,8 +55,8 @@ export function AccountMenu({ onClose }: { onClose: () => void }) {
           </div>
           {note && <div className="label" style={{ color: "var(--accent-rust)" }}>{note}</div>}
           <div className="account-actions">
-            <button className="sub-btn" onClick={() => void manage()} disabled={busy}>
-              {busy ? "…" : subscribed ? "manage / cancel billing" : "subscribe · $2/mo"}
+            <button className="sub-btn" onClick={() => void (subscribed ? manage() : subscribe())} disabled={busy}>
+              {busy ? "…" : subscribed ? "manage / cancel billing" : `subscribe · $${PRICING.defaultMonthlyUsd}/mo`}
             </button>
             <button className="seg-btn" onClick={() => { void signOut(); onClose(); }}>sign out</button>
           </div>

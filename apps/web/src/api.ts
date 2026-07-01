@@ -32,7 +32,14 @@ async function getJson<T>(path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
+async function postJson<T>(path: string): Promise<T> {
+  const r = await fetch(`${API_BASE}${path}`, { method: "POST", headers: authHeader() });
+  if (!r.ok) throw new Error(`${path} → ${r.status}`);
+  return r.json() as Promise<T>;
+}
+
 export const getMe = () => getJson<Me>("/api/auth/me");
+export const subscribeDemo = () => postJson<{ ok: boolean; subscribed: boolean }>("/api/subscribe/demo");
 
 export const getModels = () => getJson<Model[]>("/api/models");
 export const getModel = (slug: string) => getJson<Model>(`/api/models/${slug}`);
