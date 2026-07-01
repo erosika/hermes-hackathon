@@ -22,6 +22,17 @@ startStewardLoop();
 // customer auth on /v1 — shared keys for now; builder swaps for Stripe-issued per-customer keys.
 const gatewayKeys = (process.env.GATEWAY_KEYS ?? "").split(",").filter(Boolean);
 
+// per-key rate limit — in-memory sliding window (single machine; move to Redis for multi-node).
+const RPM = Number(process.env.RATE_LIMIT_RPM ?? 60);
+const RATE_WINDOW_S = 60;
+const hitLog = new Map<string, number[]>();
+function rateLimited(id: string): boolean {
+  const now = Date.now();
+  const recent = (hitLog.get(id) ?? []).filter((t) => now - t < RATE_WINDOW_S * 1000);
+  if (recent.length >= RPM) return (hitLog.set(id, recent), true);
+  return (recent.push(now), hitLog.set(id, recent), false);
+}
+
 const HF = "https://huggingface.co/";
 const withLinks = (m: Model) => ({
   ...m,
@@ -54,9 +65,15 @@ async function residentSlugs(): Promise<Set<string>> {
 const app = new Elysia()
   .use(cors())
   .onBeforeHandle(({ request, path, set }) => {
-    if (!path.startsWith("/v1/") || gatewayKeys.length === 0) return; // open until keys set
+    if (!path.startsWith("/v1/")) return;
     const key = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (!gatewayKeys.includes(key)) return (set.status = 401), { error: "invalid api key" };
+    if (gatewayKeys.length && !gatewayKeys.includes(key)) return (set.status = 401), { error: "invalid api key" };
+    const id = key || "anon";
+    if (rateLimited(id)) {
+      set.status = 429;
+      set.headers["retry-after"] = String(RATE_WINDOW_S);
+      return { error: "rate limit exceeded", limit_rpm: RPM, window_s: RATE_WINDOW_S };
+    }
   })
   .get("/health", () => ({ ok: true, models: MODELS.length, profiles: PROFILES.length }))
 

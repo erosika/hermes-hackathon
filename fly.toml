@@ -13,3 +13,4 @@ primary_region = "ewr"
 [env]
   PORT = "8080"
   SEED_DEMO_REVENUE = "0"
+  RATE_LIMIT_RPM = "30"
