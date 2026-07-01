@@ -236,6 +236,34 @@ body {
 }
 .pick:focus { outline: none; border-color: var(--accent); }
 
+/* auth cluster */
+.auth { display: flex; align-items: center; gap: var(--grid); }
+.auth-in { max-width: 150px; text-transform: none; letter-spacing: 0; }
+.auth-email { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.seg-btn:hover { border-color: var(--accent); color: var(--accent); }
+.badge {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+.badge.pro { color: var(--accent-sage); border-color: color-mix(in srgb, var(--accent-sage) 45%, transparent); }
+.badge.free { color: var(--dim); }
+
 /* ── sidebar (pantheon) ── */
 .sidebar {
   grid-area: sidebar;

@@ -17,8 +17,13 @@ export interface SubscribeLink {
   live: boolean; // true when redirecting to real Stripe
 }
 
-export function subscribeUrl(): SubscribeLink {
+export function subscribeUrl(email?: string): SubscribeLink {
   const portal = process.env.STRIPE_PORTAL_URL;
-  if (portal) return { url: portal, plan: PLAN.slug, priceUsd: PLAN.priceUsd, live: true };
-  return { url: `/checkout/demo?plan=${PLAN.slug}&price=${PLAN.priceUsd}`, plan: PLAN.slug, priceUsd: PLAN.priceUsd, live: false };
+  if (portal) {
+    // prefill the buyer on the Stripe-hosted page so the webhook ties the sub to them.
+    const url = email ? `${portal}${portal.includes("?") ? "&" : "?"}prefilled_email=${encodeURIComponent(email)}` : portal;
+    return { url, plan: PLAN.slug, priceUsd: PLAN.priceUsd, live: true };
+  }
+  const q = `plan=${PLAN.slug}&price=${PLAN.priceUsd}${email ? `&email=${encodeURIComponent(email)}` : ""}`;
+  return { url: `/checkout/demo?${q}`, plan: PLAN.slug, priceUsd: PLAN.priceUsd, live: false };
 }

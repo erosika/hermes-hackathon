@@ -4,8 +4,10 @@ import { MODELS, PROFILES } from "./seed";
 import { dispatch } from "./router";
 import { startHealthLoop, snapshot } from "./health";
 import { incomeEntries, incomeUsd, recordIncome } from "./ledger";
-import { activateSubscription, listSubscriptions, subscriptionSummary } from "./subscriptions";
+import { activateSubscription, listSubscriptions, subscriptionSummary, isSubscribed } from "./subscriptions";
 import { subscribeUrl, PLAN } from "./billing";
+import { signSession, readSessionEmail, sessionCookie, clearCookie } from "./auth";
+import { checkFreeTier, FREE } from "./ratelimit";
 import { newSession } from "./honcho";
 import { verifyAndParse, handleStripeEvent, type StripeEventLike } from "./webhooks";
 import { nudge, nudgeSummary } from "./nudge";
@@ -38,17 +40,34 @@ const app = new Elysia()
   .get("/api/profiles", () => PROFILES)
   .get("/api/backends", () => snapshot())
 
+  // auth — email sign-in, signed-cookie session
+  .post("/api/auth/login", async ({ body, set }) => {
+    const email = (body as { email: string }).email.trim().toLowerCase();
+    if (!email) return { email: null, subscribed: false };
+    set.headers["set-cookie"] = sessionCookie(await signSession(email));
+    return { email, subscribed: isSubscribed(email) };
+  }, { body: t.Object({ email: t.String() }) })
+  .get("/api/auth/me", async ({ request }) => {
+    const email = await readSessionEmail(request.headers.get("cookie"));
+    return { email, subscribed: email ? isSubscribed(email) : false };
+  })
+  .post("/api/auth/logout", ({ set }) => { set.headers["set-cookie"] = clearCookie(); return { ok: true }; })
+
   // subscription business — one plan, MRR + income log
   .get("/api/revenue", () => ({ ...subscriptionSummary(), incomeTotal: incomeUsd(), entries: incomeEntries() }))
   .get("/api/subscriptions", () => listSubscriptions())
-  .get("/api/subscribe", () => subscribeUrl())
+  .get("/api/subscribe", async ({ request }) => {
+    const email = await readSessionEmail(request.headers.get("cookie"));
+    return subscribeUrl(email ?? undefined);
+  })
 
-  // demo checkout — opening the subscribe url books a Pantheon Pro sub without real Stripe.
+  // demo checkout — opening the subscribe url books a Pantheon Pro sub for the signed-in email.
   .get("/checkout/demo", async ({ query }) => {
     const price = Number(query.price ?? PLAN.priceUsd);
+    const email = String(query.email ?? "demo@hermetika");
     const evt: StripeEventLike = {
       type: "checkout.session.completed",
-      data: { object: { amount_total: Math.round(price * 100), customer_email: "demo@hermetika" } },
+      data: { object: { amount_total: Math.round(price * 100), customer_email: email } },
     };
     const r = await handleStripeEvent(evt);
     const html = `<!doctype html><meta charset="utf-8"><body style="font-family:monospace;background:#17100a;color:#ecdcae;padding:2rem"><p>${PLAN.name}</p><p>subscription active · ${r.note}</p><p>close this tab to return.</p></body>`;
@@ -70,10 +89,21 @@ const app = new Elysia()
   // OpenAI-compatible inference gateway
   .post(
     "/v1/chat/completions",
-    async ({ body, status }) => {
+    async ({ body, status, request }) => {
       const req = body as ChatRequest;
       const model = MODELS.find((m) => m.slug === req.model);
       if (!model) return status(404, { error: `unknown model '${req.model}'` });
+
+      // access gate — subscribers are unlimited; everyone else gets the free tier.
+      const email = await readSessionEmail(request.headers.get("cookie"));
+      const pro = email ? isSubscribed(email) : false;
+      let freeRemaining: number = FREE.lifetime;
+      if (!pro) {
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+        const rl = checkFreeTier(email ?? ip, ip);
+        if (!rl.allowed) return status(402, { error: rl.reason, upgrade: "/api/subscribe" });
+        freeRemaining = rl.remaining;
+      }
       const session = newSession(req.sessionId ?? `s_${req.model}`);
 
       try {
@@ -81,6 +111,8 @@ const app = new Elysia()
         const headers: Record<string, string> = {
           "x-hermetika-session": session.id,
           "x-hermetika-backend": resolved.provider,
+          "x-hermetika-tier": pro ? "pro" : "free",
+          ...(pro ? {} : { "x-hermetika-free-remaining": String(freeRemaining) }),
           ...(resolved.failedOver ? { "x-hermetika-failover": "1" } : {}),
         };
 

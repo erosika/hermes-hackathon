@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Model } from "@hermetika/shared";
 import { getModels } from "./api";
 import { ThemeProvider } from "./ThemeProvider";
+import { AuthProvider } from "./AuthProvider";
 import { TopNav } from "./TopNav";
 import { Sidebar } from "./Sidebar";
 import { Desktop, type WinState } from "./Desktop";
@@ -68,6 +69,7 @@ export function App() {
 
   return (
     <ThemeProvider>
+      <AuthProvider>
       <div className="shell">
         <TopNav
           windows={windows}
@@ -92,6 +94,7 @@ export function App() {
         />
         <StatusBar />
       </div>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

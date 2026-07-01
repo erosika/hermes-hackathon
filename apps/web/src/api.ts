@@ -18,11 +18,30 @@ export interface SubscribeLink {
   live: boolean;
 }
 
+export interface Me {
+  email: string | null;
+  subscribed: boolean;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const r = await fetch(path);
   if (!r.ok) throw new Error(`${path} → ${r.status}`);
   return r.json() as Promise<T>;
 }
+
+async function postJson<T>(path: string, body?: unknown): Promise<T> {
+  const r = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`${path} → ${r.status}`);
+  return r.json() as Promise<T>;
+}
+
+export const login = (email: string) => postJson<Me>("/api/auth/login", { email });
+export const logout = () => postJson<{ ok: boolean }>("/api/auth/logout");
+export const getMe = () => getJson<Me>("/api/auth/me");
 
 export const getModels = () => getJson<Model[]>("/api/models");
 export const getModel = (slug: string) => getJson<Model>(`/api/models/${slug}`);
