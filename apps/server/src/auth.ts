@@ -1,60 +1,51 @@
-// real auth — verify the Supabase-issued JWT on the Authorization header.
-// no cookie, no shared password: the client signs in via Supabase (magic link / OTP),
-// gets a JWT, and sends it as `Bearer <token>`. we verify HS256 against the project's
-// JWT secret and trust the email/sub inside. set SUPABASE_JWT_SECRET (Supabase → API → JWT Secret).
+// real auth — the client signs in via Supabase (magic link / OTP) and sends its access
+// token as `Bearer <token>`. we verify by asking Supabase who the token belongs to
+// (GET /auth/v1/user). needs only SUPABASE_URL + SUPABASE_ANON_KEY (neither secret,
+// both CLI-gettable), and works regardless of the project's JWT signing scheme.
 
 export interface Identity {
   email: string;
   sub: string; // supabase user id
 }
 
-const enc = (s: string) => new TextEncoder().encode(s);
-const secret = () => process.env.SUPABASE_JWT_SECRET;
-
-function b64urlToBytes(s: string): Uint8Array<ArrayBuffer> {
-  const b64 = s.replaceAll("-", "+").replaceAll("_", "/") + "===".slice((s.length + 3) % 4);
-  const bin = atob(b64);
-  const bytes = new Uint8Array(new ArrayBuffer(bin.length));
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
-}
-
-let cached: { secret: string; key: CryptoKey } | null = null;
-async function key(sec: string): Promise<CryptoKey> {
-  if (cached?.secret === sec) return cached.key;
-  const k = await crypto.subtle.importKey("raw", enc(sec), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-  cached = { secret: sec, key: k };
-  return k;
-}
+const url = () => process.env.SUPABASE_URL;
+const anon = () => process.env.SUPABASE_ANON_KEY;
 
 export function authConfigured(): boolean {
-  return !!secret();
+  return !!(url() && anon());
 }
 
+// short cache so a burst of calls with the same token doesn't hit Supabase each time.
+const cache = new Map<string, { id: Identity | null; exp: number }>();
+
 export async function readIdentity(request: Request): Promise<Identity | null> {
-  const sec = secret();
-  if (!sec) return null; // auth not wired — no trusted identity
+  const base = url();
+  const key = anon();
+  if (!base || !key) return null;
+
   const header = request.headers.get("authorization");
   const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
   if (!token) return null;
 
-  const [h, p, s] = token.split(".");
-  if (!h || !p || !s) return null;
+  const now = Date.now();
+  const hit = cache.get(token);
+  if (hit && hit.exp > now) return hit.id;
 
   try {
-    const ok = await crypto.subtle.verify("HMAC", await key(sec), b64urlToBytes(s), enc(`${h}.${p}`));
-    if (!ok) return null;
-    const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(p))) as {
-      email?: string;
-      sub?: string;
-      exp?: number;
-      user_metadata?: { email?: string };
-    };
-    if (payload.exp && Date.now() / 1000 > payload.exp) return null; // expired
-    const email = payload.email ?? payload.user_metadata?.email;
-    if (!email || !payload.sub) return null;
-    return { email: String(email).toLowerCase(), sub: String(payload.sub) };
+    const r = await fetch(`${base}/auth/v1/user`, { headers: { apikey: key, authorization: `Bearer ${token}` } });
+    if (!r.ok) {
+      cache.set(token, { id: null, exp: now + 15_000 });
+      return null;
+    }
+    const u = (await r.json()) as { id?: string; email?: string };
+    const id = u.email && u.id ? { email: String(u.email).toLowerCase(), sub: String(u.id) } : null;
+    cache.set(token, { id, exp: now + 60_000 });
+    return id;
   } catch {
     return null;
   }
+}
+
+export function __clearAuthCacheForTest(): void {
+  cache.clear();
 }

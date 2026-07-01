@@ -1,47 +1,47 @@
-import { expect, test, describe, beforeEach } from "bun:test";
+import { expect, test, describe, beforeEach, afterEach } from "bun:test";
 import { checkFreeTier, FREE, __resetRateLimitForTest } from "./ratelimit";
 
-const SECRET = "test-jwt-secret";
-process.env.SUPABASE_JWT_SECRET = SECRET;
-
-const bytesToB64url = (b: Uint8Array) => btoa(String.fromCharCode(...b)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-const strToB64url = (s: string) => bytesToB64url(new TextEncoder().encode(s));
-
-async function makeJwt(payload: Record<string, unknown>, sec = SECRET): Promise<string> {
-  const header = strToB64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const body = strToB64url(JSON.stringify(payload));
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(sec), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${header}.${body}`));
-  return `${header}.${body}.${bytesToB64url(new Uint8Array(sig))}`;
-}
+process.env.SUPABASE_URL = "http://sb.test";
+process.env.SUPABASE_ANON_KEY = "anon-test";
 
 const bearer = (token?: string) =>
   new Request("http://x/v1", token ? { headers: { authorization: `Bearer ${token}` } } : undefined);
+const origFetch = globalThis.fetch;
 
-describe("supabase jwt", () => {
-  test("verifies a valid token → identity (email lowercased)", async () => {
+describe("supabase token verification", () => {
+  beforeEach(async () => {
+    const { __clearAuthCacheForTest } = await import("./auth");
+    __clearAuthCacheForTest();
+  });
+  afterEach(() => { globalThis.fetch = origFetch; });
+
+  test("valid token → identity (email lowercased), calls /auth/v1/user with apikey", async () => {
+    let seen = "";
+    globalThis.fetch = (async (u: string | URL | Request, init?: RequestInit) => {
+      seen = String(u);
+      const apikey = (init?.headers as Record<string, string>)?.apikey;
+      expect(apikey).toBe("anon-test");
+      return new Response(JSON.stringify({ id: "u1", email: "Eri@X" }), { status: 200 });
+    }) as typeof fetch;
     const { readIdentity } = await import("./auth");
-    const jwt = await makeJwt({ sub: "u1", email: "Eri@X", exp: Math.floor(Date.now() / 1000) + 3600 });
-    const id = await readIdentity(bearer(jwt));
+    const id = await readIdentity(bearer("tok"));
+    expect(seen).toBe("http://sb.test/auth/v1/user");
     expect(id?.email).toBe("eri@x");
     expect(id?.sub).toBe("u1");
   });
 
-  test("rejects a token signed with the wrong secret", async () => {
+  test("supabase rejects (401) → null", async () => {
+    globalThis.fetch = (async () => new Response("no", { status: 401 })) as typeof fetch;
     const { readIdentity } = await import("./auth");
-    const jwt = await makeJwt({ sub: "u1", email: "a@b" }, "not-the-secret");
-    expect(await readIdentity(bearer(jwt))).toBeNull();
+    expect(await readIdentity(bearer("bad"))).toBeNull();
   });
 
-  test("rejects an expired token", async () => {
-    const { readIdentity } = await import("./auth");
-    const jwt = await makeJwt({ sub: "u1", email: "a@b", exp: 1 });
-    expect(await readIdentity(bearer(jwt))).toBeNull();
-  });
-
-  test("no bearer → null", async () => {
+  test("no bearer → null, no supabase call", async () => {
+    let called = false;
+    globalThis.fetch = (async () => { called = true; return new Response("{}"); }) as typeof fetch;
     const { readIdentity } = await import("./auth");
     expect(await readIdentity(bearer())).toBeNull();
+    expect(called).toBe(false);
   });
 });
 
