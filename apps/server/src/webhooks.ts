@@ -1,11 +1,12 @@
-// Stripe webhook handler — feeds the income lane of the survival-loop ledger.
-// customer pays (checkout / invoice) → cash row in + subscription activated.
+// Stripe webhook handler — books subscription revenue.
+// customer pays (checkout / invoice) → income row + Pantheon Pro subscription activated.
 // demo-degrades: with no STRIPE_WEBHOOK_SECRET it parses raw JSON and never throws,
 // so the flow is drivable end-to-end without real Stripe keys.
 
 import { type LedgerEntry, type Subscription } from "@hermetika/shared";
 import { recordIncome } from "./ledger";
 import { activateSubscription } from "./subscriptions";
+import { PLAN } from "./billing";
 
 export interface StripeEventLike {
   type: string;
@@ -44,14 +45,10 @@ export async function handleStripeEvent(evt: StripeEventLike): Promise<{ handled
   const obj = evt.data?.object ?? {};
   const cents = obj.amount_total ?? obj.amount_paid ?? 0; // Stripe amounts are in cents
   const amountUsd = Number(cents) / 100;
-  const slug: string | undefined = obj.metadata?.slug;
   const customerRef: string = obj.customer_email ?? obj.customer ?? "anon";
 
-  const entry: LedgerEntry = recordIncome(amountUsd, "stripe", `pantheon pro · ${slug ?? "sub"}`);
+  const entry: LedgerEntry = recordIncome(amountUsd, "stripe", `${PLAN.name} · ${customerRef}`);
+  const sub: Subscription = activateSubscription(PLAN.slug, customerRef, amountUsd);
 
-  let sub: Subscription | undefined;
-  if (slug) sub = activateSubscription(slug, customerRef, amountUsd);
-
-  const suffix = sub ? ` · sub ${slug}` : "";
-  return { handled: true, note: `income $${amountUsd.toFixed(2)} (${entry.ref})${suffix}` };
+  return { handled: true, note: `income $${amountUsd.toFixed(2)} (${entry.ref}) · ${sub.status} ${PLAN.slug}` };
 }

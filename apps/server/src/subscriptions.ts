@@ -32,14 +32,24 @@ export function listSubscriptions(): Subscription[] {
   return subs;
 }
 
-// gate check — is this model unlocked? customerRef narrows to one buyer when supplied.
-export function isSubscribed(modelSlug: string, customerRef?: string): boolean {
-  return subs.some(
-    (s) =>
-      s.status === "active" &&
-      s.modelSlug === modelSlug &&
-      (customerRef === undefined || s.customerRef === customerRef),
-  );
+// gate check — does this customer hold an active subscription?
+export function isSubscribed(customerRef?: string): boolean {
+  return subs.some((s) => s.status === "active" && (customerRef === undefined || s.customerRef === customerRef));
+}
+
+const active = () => subs.filter((s) => s.status === "active");
+
+// monthly recurring revenue — the one number the platform runs on.
+export function mrrUsd(): number {
+  return Number(active().reduce((s, x) => s + x.priceUsd, 0).toFixed(2));
+}
+
+export function activeCount(): number {
+  return active().length;
+}
+
+export function subscriptionSummary() {
+  return { mrr: mrrUsd(), active: activeCount(), total: subs.length, recent: subs.slice(-8).reverse() };
 }
 
 // test seam — clears the store + seq between cases.

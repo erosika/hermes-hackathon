@@ -3,24 +3,25 @@ import { cors } from "@elysiajs/cors";
 import { MODELS, PROFILES } from "./seed";
 import { dispatch } from "./router";
 import { startHealthLoop, snapshot } from "./health";
-import { meter, ledger, floatUsd, incomeUsd, spendUsd, netUsd, stewardStatus, startStewardLoop, recordIncome } from "./ledger";
+import { incomeEntries, incomeUsd, recordIncome } from "./ledger";
+import { activateSubscription, listSubscriptions, subscriptionSummary } from "./subscriptions";
+import { subscribeUrl, PLAN } from "./billing";
 import { newSession } from "./honcho";
-import { createCheckoutSession } from "./checkout";
 import { verifyAndParse, handleStripeEvent, type StripeEventLike } from "./webhooks";
 import { nudge, nudgeSummary } from "./nudge";
-import { listSubscriptions } from "./subscriptions";
 import type { ChatRequest } from "@hermetika/shared";
 
 const port = Number(process.env.PORT ?? 3001);
 
-// demo revenue so the P&L has a customer side until Stripe subs land (D4).
+// demo subscribers so MRR isn't empty until real Stripe subs land.
 if (process.env.SEED_DEMO_REVENUE !== "0") {
-  recordIncome(30, "stripe", "pantheon pro · sub");
-  recordIncome(18, "stripe", "pantheon pro · sub");
+  for (const who of ["ada@demo", "lin@demo"]) {
+    activateSubscription(PLAN.slug, who, PLAN.priceUsd);
+    recordIncome(PLAN.priceUsd, "stripe", `${PLAN.name} · ${who}`);
+  }
 }
 
 startHealthLoop();
-startStewardLoop();
 
 const app = new Elysia()
   .use(cors())
@@ -33,29 +34,24 @@ const app = new Elysia()
     return m ?? status(404, { error: "model not found" });
   })
 
-  // hermes operators
+  // hermes operators + backend health
   .get("/api/profiles", () => PROFILES)
-
-  // ops surfaces — backend health + survival-loop P&L
   .get("/api/backends", () => snapshot())
-  .get("/api/ledger", () => ({ float: floatUsd(), income: incomeUsd(), spend: spendUsd(), net: netUsd(), entries: ledger() }))
-  .get("/api/steward", () => stewardStatus())
 
-  // customer side — subscriptions + checkout
+  // subscription business — one plan, MRR + income log
+  .get("/api/revenue", () => ({ ...subscriptionSummary(), incomeTotal: incomeUsd(), entries: incomeEntries() }))
   .get("/api/subscriptions", () => listSubscriptions())
-  .post("/api/checkout", ({ body }) => createCheckoutSession((body as { slug: string }).slug), {
-    body: t.Object({ slug: t.String() }),
-  })
-  // demo checkout: opening the session url closes the income loop without real Stripe.
+  .get("/api/subscribe", () => subscribeUrl())
+
+  // demo checkout — opening the subscribe url books a Pantheon Pro sub without real Stripe.
   .get("/checkout/demo", async ({ query }) => {
-    const slug = String(query.slug ?? "");
-    const price = Number(query.price ?? 0);
+    const price = Number(query.price ?? PLAN.priceUsd);
     const evt: StripeEventLike = {
       type: "checkout.session.completed",
-      data: { object: { amount_total: Math.round(price * 100), metadata: { slug }, customer_email: "demo@hermetika" } },
+      data: { object: { amount_total: Math.round(price * 100), customer_email: "demo@hermetika" } },
     };
     const r = await handleStripeEvent(evt);
-    const html = `<!doctype html><meta charset="utf-8"><body style="font-family:monospace;background:#0a0b0d;color:#d7dadf;padding:2rem"><p>pantheon pro · ${slug}</p><p>subscription active · income booked (${r.note})</p><p>close this tab to return.</p></body>`;
+    const html = `<!doctype html><meta charset="utf-8"><body style="font-family:monospace;background:#17100a;color:#ecdcae;padding:2rem"><p>${PLAN.name}</p><p>subscription active · ${r.note}</p><p>close this tab to return.</p></body>`;
     return new Response(html, { headers: { "content-type": "text/html" } });
   })
 
@@ -82,32 +78,23 @@ const app = new Elysia()
 
       try {
         const { res, resolved } = await dispatch(model, req);
+        const headers: Record<string, string> = {
+          "x-hermetika-session": session.id,
+          "x-hermetika-backend": resolved.provider,
+          ...(resolved.failedOver ? { "x-hermetika-failover": "1" } : {}),
+        };
 
-        // stream → pass SSE straight through (stream metering lands with usage events)
         if (req.stream) {
           return new Response(res.body, {
             status: res.status,
-            headers: {
-              "content-type": res.headers.get("content-type") ?? "text/event-stream",
-              "x-hermetika-session": session.id,
-              "x-hermetika-backend": resolved.provider,
-              ...(resolved.failedOver ? { "x-hermetika-failover": "1" } : {}),
-            },
+            headers: { "content-type": res.headers.get("content-type") ?? "text/event-stream", ...headers },
           });
         }
 
-        // non-stream → meter precisely from usage, then return
-        const json = (await res.json()) as { usage?: { total_tokens?: number } };
-        const tokens = json.usage?.total_tokens ?? 0;
-        meter(resolved.provider, resolved.backend, tokens, model.slug);
+        const json = await res.json();
         return new Response(JSON.stringify(json), {
           status: res.status,
-          headers: {
-            "content-type": "application/json",
-            "x-hermetika-session": session.id,
-            "x-hermetika-backend": resolved.provider,
-            ...(resolved.failedOver ? { "x-hermetika-failover": "1" } : {}),
-          },
+          headers: { "content-type": "application/json", ...headers },
         });
       } catch (e) {
         return status(502, { error: String(e) });

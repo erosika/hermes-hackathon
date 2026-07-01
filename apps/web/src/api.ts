@@ -1,22 +1,21 @@
-import type { CheckoutSession, LedgerEntry, Model, Profile } from "@hermetika/shared";
+import type { LedgerEntry, Model, Profile, Subscription } from "@hermetika/shared";
 
 // thin client over the gateway's REST surface.
 
-export type { CheckoutSession };
-
-export interface LedgerView {
-  float: number; // compute-credit wallet
-  income: number; // customer revenue in
-  spend: number; // real USD out (steward top-ups)
-  net: number; // income − spend, the money-shot
+export interface RevenueView {
+  mrr: number;
+  active: number;
+  total: number;
+  recent: Subscription[];
+  incomeTotal: number;
   entries: LedgerEntry[];
 }
 
-export interface StewardView {
-  topUp: boolean;
-  amount: number;
-  float: number;
-  lastAction: { at: string; amount: number; floatBefore: number; floatAfter: number } | null;
+export interface SubscribeLink {
+  url: string;
+  plan: string;
+  priceUsd: number;
+  live: boolean;
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -25,28 +24,15 @@ async function getJson<T>(path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const r = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(`${path} → ${r.status}`);
-  return r.json() as Promise<T>;
-}
-
 export const getModels = () => getJson<Model[]>("/api/models");
 export const getModel = (slug: string) => getJson<Model>(`/api/models/${slug}`);
 export const getProfiles = () => getJson<Profile[]>("/api/profiles");
 export const getBackends = () => getJson<unknown>("/api/backends");
-export const getLedger = () => getJson<LedgerView>("/api/ledger");
-export const getSteward = () => getJson<StewardView>("/api/steward");
-
-// caller decides how to open the returned url (real Stripe url or demo stub).
-export const createCheckout = (slug: string) => postJson<CheckoutSession>("/api/checkout", { slug });
+export const getRevenue = () => getJson<RevenueView>("/api/revenue");
+export const getSubscriptions = () => getJson<Subscription[]>("/api/subscriptions");
+export const getSubscribe = () => getJson<SubscribeLink>("/api/subscribe");
 
 // derive the serving lane from a model's backend_ref for honest labels.
-// gpu://spark → owned hot · gpu://sparktail → owned tail · gpu://brev → paid burst · proxy://x → proxied
 export function laneLabel(backendRef: string): string {
   const provider = backendRef.split("://")[1]?.split("/")[0] ?? "";
   switch (provider) {

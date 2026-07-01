@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { type Model, PRICING } from "@hermetika/shared";
-import { createCheckout, laneLabel } from "./api";
+import { laneLabel } from "./api";
 import { useChatStream } from "./useChatStream";
 import { MercurySigil } from "./MercurySigil";
 
@@ -26,15 +26,6 @@ export function SandboxWindow({ model, models, onSwap }: { model: Model; models:
     void send(model.slug, text);
   };
 
-  const onSubscribe = async () => {
-    try {
-      const s = await createCheckout(model.slug);
-      window.open(s.url, "_blank", "noopener");
-    } catch {
-      /* demo: checkout unavailable */
-    }
-  };
-
   return (
     <div className="sbx">
       <div className="sbx-meta">
@@ -49,7 +40,6 @@ export function SandboxWindow({ model, models, onSwap }: { model: Model; models:
         </select>
         <span className={`label ${model.backend === "gpu" ? "backend-gpu" : "backend-proxy"}`}>{laneLabel(model.backendRef)}</span>
         <span className="sbx-price">${price}/mo</span>
-        <button className="sub-btn" onClick={onSubscribe}>sub ${price}</button>
       </div>
 
       <form className="playground" onSubmit={onSubmit}>
