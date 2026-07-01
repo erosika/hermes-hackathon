@@ -17,8 +17,8 @@ import type { ChatRequest, Model } from "@hermetika/shared";
 
 const port = Number(process.env.PORT ?? 3001);
 
-// demo subscribers so MRR isn't empty until real Stripe subs land.
-if (process.env.SEED_DEMO_REVENUE !== "0") {
+// demo subscribers so MRR isn't empty — opt-in only (SEED_DEMO_REVENUE=1); off in prod.
+if (process.env.SEED_DEMO_REVENUE === "1") {
   for (const who of ["ada@demo", "lin@demo"]) {
     activateSubscription(PLAN.slug, who, PLAN.priceUsd);
     recordIncome(PLAN.priceUsd, "stripe", `${PLAN.name} · ${who}`);
