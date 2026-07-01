@@ -522,6 +522,36 @@ body {
 .account-actions .sub-btn, .account-actions .seg-btn { width: 100%; text-align: center; }
 .account-hint { text-transform: none; letter-spacing: 0; }
 
+/* ── credits / about corner widget (bottom-right) ── */
+.credits { position: fixed; bottom: 16px; right: 16px; z-index: 90; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.credits-pill {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--dim); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 6px 10px; cursor: pointer;
+}
+.credits-pill:hover { color: var(--ink); border-color: var(--accent); }
+.credits-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
+.credits-card {
+  width: 340px; max-width: calc(100vw - 32px);
+  background: var(--panel); border: 1px solid var(--accent); border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); padding: calc(var(--grid) * 2);
+  display: flex; flex-direction: column; gap: var(--grid);
+}
+.credits-head { display: flex; align-items: center; justify-content: space-between; }
+.mark-sm { font-size: 13px; letter-spacing: 0.18em; color: var(--chrome-3); font-weight: 600; }
+.credits-sub { margin-top: -4px; }
+.credits-list { display: flex; flex-direction: column; gap: calc(var(--grid) * 1.25); margin-top: var(--grid); }
+.credit-row { display: flex; flex-direction: column; gap: 3px; }
+.credit-k { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.credit-v { font-size: 12px; line-height: 1.5; color: var(--dim); }
+/* delicate dotted separator */
+.credits-rule { height: 0; border-top: 1px dotted var(--line); margin: calc(var(--grid) * 0.5) 0; }
+.credits-about p { margin: 4px 0 0; font-size: 12px; line-height: 1.55; color: var(--ink); }
+.credits-about b { color: var(--chrome-3); font-weight: 600; }
+.credits-about .dim { color: var(--dim); }
+.credits-hack { line-height: 1.5; text-transform: none; letter-spacing: 0.02em; }
+
 @media (prefers-reduced-motion: reduce) {
   .quota-fill, .sub-btn { transition: none; }
   .kbd-backdrop { backdrop-filter: none; }

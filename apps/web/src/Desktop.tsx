@@ -53,7 +53,7 @@ export function Desktop({ windows, models, activeId, layoutMode, masterRatio, on
   return (
     <div className="desktop" ref={ref}>
       {windows.length === 0 && (
-        <div className="desktop-empty label">pick a model from the pantheon to open a sandbox</div>
+        <div className="desktop-empty label">pick a model to open a sandbox</div>
       )}
       <AnimatePresence>
         {windows.map((w) => {

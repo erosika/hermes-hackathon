@@ -11,7 +11,7 @@ export function Sidebar({ models, openSlugs, onOpen }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="side-head">
-        <span className="label">pantheon</span>
+        <span className="label">models</span>
         <span className="label">{models.length}</span>
       </div>
       {models.map((m) => (

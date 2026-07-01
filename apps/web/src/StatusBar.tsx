@@ -35,7 +35,7 @@ export function StatusBar() {
 
   return (
     <footer className="status-bar">
-      <span className="label">pantheon pro · operated by hermes</span>
+      <span className="label">hermetika · operated by hermes</span>
       <div className="stat ok"><span className="label">mrr</span><b>{usd(rev?.mrr)}</b></div>
       <div className="stat"><span className="label">subscribers</span><b>{rev?.active ?? 0}</b></div>
       <div className="stat"><span className="label">booked</span><b>{usd(rev?.incomeTotal)}</b></div>

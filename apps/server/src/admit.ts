@@ -71,7 +71,7 @@ export function admitModel(input: AdmitInput): AdmitResult {
     return { ok: false, reason: `license '${input.license ?? ""}' not admissible` };
   }
   if (MODELS.some((m) => m.slug === input.slug)) {
-    return { ok: false, reason: "already in pantheon" };
+    return { ok: false, reason: "already in the registry" };
   }
 
   const slug = input.slug;

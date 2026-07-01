@@ -5,10 +5,10 @@ import Stripe from "stripe";
 // STRIPE_SECRET_KEY we fall back to STRIPE_PORTAL_URL, then to a local demo checkout.
 
 export const PLAN = {
-  slug: "pantheon-pro",
-  name: "Pantheon Pro",
+  slug: "hermetika-pro",
+  name: "Hermetika Pro",
   blurb: "unlimited access",
-  priceUsd: Number(process.env.PANTHEON_PRICE_USD ?? 2),
+  priceUsd: Number(process.env.HERMETIKA_PRICE_USD ?? process.env.PANTHEON_PRICE_USD ?? 2),
 } as const;
 
 export interface SubscribeLink {

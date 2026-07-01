@@ -40,7 +40,7 @@ export function AccountMenu({ onClose }: { onClose: () => void }) {
           </div>
           <div className="account-row">
             <span className="label">plan</span>
-            <span className={`badge ${subscribed ? "pro" : "free"}`}>{subscribed ? "pantheon pro · unlimited" : "free tier"}</span>
+            <span className={`badge ${subscribed ? "pro" : "free"}`}>{subscribed ? "hermetika pro · unlimited" : "free tier"}</span>
           </div>
           {note && <div className="label" style={{ color: "var(--accent-rust)" }}>{note}</div>}
           <div className="account-actions">
