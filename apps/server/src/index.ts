@@ -5,6 +5,10 @@ import { dispatch } from "./router";
 import { startHealthLoop, snapshot } from "./health";
 import { meter, ledger, floatUsd, incomeUsd, spendUsd, netUsd, stewardStatus, startStewardLoop, recordIncome } from "./ledger";
 import { newSession } from "./honcho";
+import { createCheckoutSession } from "./checkout";
+import { verifyAndParse, handleStripeEvent, type StripeEventLike } from "./webhooks";
+import { nudge, nudgeSummary } from "./nudge";
+import { listSubscriptions } from "./subscriptions";
 import type { ChatRequest } from "@hermetika/shared";
 
 const port = Number(process.env.PORT ?? 3001);
@@ -36,6 +40,36 @@ const app = new Elysia()
   .get("/api/backends", () => snapshot())
   .get("/api/ledger", () => ({ float: floatUsd(), income: incomeUsd(), spend: spendUsd(), net: netUsd(), entries: ledger() }))
   .get("/api/steward", () => stewardStatus())
+
+  // customer side — subscriptions + checkout
+  .get("/api/subscriptions", () => listSubscriptions())
+  .post("/api/checkout", ({ body }) => createCheckoutSession((body as { slug: string }).slug), {
+    body: t.Object({ slug: t.String() }),
+  })
+  // demo checkout: opening the session url closes the income loop without real Stripe.
+  .get("/checkout/demo", async ({ query }) => {
+    const slug = String(query.slug ?? "");
+    const price = Number(query.price ?? 0);
+    const evt: StripeEventLike = {
+      type: "checkout.session.completed",
+      data: { object: { amount_total: Math.round(price * 100), metadata: { slug }, customer_email: "demo@hermetika" } },
+    };
+    const r = await handleStripeEvent(evt);
+    const html = `<!doctype html><meta charset="utf-8"><body style="font-family:monospace;background:#0a0b0d;color:#d7dadf;padding:2rem"><p>pantheon pro · ${slug}</p><p>subscription active · income booked (${r.note})</p><p>close this tab to return.</p></body>`;
+    return new Response(html, { headers: { "content-type": "text/html" } });
+  })
+
+  // hermes ops — nudge admits models live
+  .post("/api/nudge", ({ body }) => {
+    const results = nudge((body as { input: string }).input);
+    return { summary: nudgeSummary(results), results };
+  }, { body: t.Object({ input: t.String() }) })
+
+  // stripe income webhook (demo mode parses directly; real mode verifies the signature)
+  .post("/webhooks/stripe", async ({ body, request }) => {
+    const evt = verifyAndParse(JSON.stringify(body), request.headers.get("stripe-signature") ?? undefined);
+    return handleStripeEvent(evt);
+  }, { body: t.Any() })
 
   // OpenAI-compatible inference gateway
   .post(
