@@ -2,10 +2,11 @@ import { Elysia, t } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { MODELS, PROFILES } from "./seed";
 import { dispatch } from "./router";
+import { getBackend } from "./backends";
 import { startHealthLoop, snapshot } from "./health";
 import { meter, ledger, floatUsd, incomeUsd, spendUsd, netUsd, stewardStatus, startStewardLoop, recordIncome } from "./ledger";
 import { newSession } from "./honcho";
-import type { ChatRequest } from "@hermetika/shared";
+import type { ChatRequest, Model } from "@hermetika/shared";
 
 const port = Number(process.env.PORT ?? 3001);
 
@@ -21,6 +22,35 @@ startStewardLoop();
 // customer auth on /v1 — shared keys for now; builder swaps for Stripe-issued per-customer keys.
 const gatewayKeys = (process.env.GATEWAY_KEYS ?? "").split(",").filter(Boolean);
 
+const HF = "https://huggingface.co/";
+const withLinks = (m: Model) => ({
+  ...m,
+  author: m.author ?? m.hfId?.split("/")[0] ?? null,
+  hfUrl: m.hfId ? HF + m.hfId.split(":")[0] : null,
+});
+
+// live resident set from Ollama /api/tags on both Sparks, cached briefly so swaps auto-surface.
+let residentCache: { at: number; set: Set<string> } = { at: 0, set: new Set() };
+async function residentSlugs(): Promise<Set<string>> {
+  if (Date.now() - residentCache.at < 15_000) return residentCache.set;
+  const names = new Set<string>();
+  for (const p of ["spark", "sparktail"]) {
+    const b = getBackend(p);
+    if (!b?.baseUrl) continue;
+    try {
+      const root = b.baseUrl.replace(/\/v1\/?$/, "");
+      const r = await fetch(`${root}/api/tags`, {
+        headers: b.apiKey ? { authorization: `Bearer ${b.apiKey}` } : {},
+        signal: AbortSignal.timeout(4000),
+      });
+      const j = (await r.json()) as { models?: { name: string }[] };
+      for (const m of j.models ?? []) names.add(m.name.split(":")[0]);
+    } catch {}
+  }
+  residentCache = { at: Date.now(), set: names };
+  return names;
+}
+
 const app = new Elysia()
   .use(cors())
   .onBeforeHandle(({ request, path, set }) => {
@@ -31,10 +61,21 @@ const app = new Elysia()
   .get("/health", () => ({ ok: true, models: MODELS.length, profiles: PROFILES.length }))
 
   // registry
-  .get("/api/models", () => MODELS.filter((m) => m.enabled))
-  .get("/api/models/:slug", ({ params, status }) => {
+  .get("/api/models", async () => {
+    const resident = await residentSlugs();
+    const known = MODELS.filter((m) => m.enabled).map((m) => ({ ...withLinks(m), resident: resident.has(m.slug) }));
+    const knownSlugs = new Set(MODELS.map((m) => m.slug));
+    // auto-surface clean slugs present on the Sparks but not yet curated in the registry
+    const extra = [...resident]
+      .filter((s) => !knownSlugs.has(s) && !s.includes("/") && !s.includes("."))
+      .map((s) => ({ slug: s, name: s, kind: "uncategorized", resident: true, backend: "gpu", enabled: true }));
+    return [...known, ...extra];
+  })
+  .get("/api/models/:slug", async ({ params, status }) => {
     const m = MODELS.find((x) => x.slug === params.slug);
-    return m ?? status(404, { error: "model not found" });
+    if (!m) return status(404, { error: "model not found" });
+    const resident = await residentSlugs();
+    return { ...withLinks(m), resident: resident.has(m.slug) };
   })
 
   // hermes operators

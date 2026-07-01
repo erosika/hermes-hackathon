@@ -25,6 +25,7 @@ export interface Model {
   backendRef: BackendRef;
   speed: "fast" | "standard"; // fast = 1-3B hot lane (vLLM); standard = everything else
   hfId?: string; // source weights on Hugging Face (self-hosted models)
+  author?: string; // true creator (override when a GGUF requant hides it); else derived from hfId org
   license?: string; // curator license-check gate before admission
   params?: string; // param count, drives lane placement
   releasedAt: string; // ISO date
