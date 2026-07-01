@@ -290,6 +290,9 @@ body {
 .side-item.open { border-color: var(--accent); }
 .side-item .name { font-size: 13px; color: var(--ink); }
 .side-item .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.side-cat { padding: calc(var(--grid) * 0.75) var(--grid) calc(var(--grid) * 0.25); display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--line); }
+.side-cat .label { color: var(--accent); letter-spacing: 0.08em; }
+.side-group:first-of-type .side-cat { border-top: none; }
 
 /* ── desktop (window host) ── */
 .desktop {
