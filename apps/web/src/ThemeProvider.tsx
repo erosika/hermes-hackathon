@@ -1,16 +1,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export const THEMES = ["sanzo-ember", "sanzo-rose", "sanzo-indigo", "sanzo-slate", "sanzo-forest", "quartz"] as const;
+export const THEMES = ["sanzo-slate", "sanzo-rose", "sanzo-indigo", "sanzo-slate", "sanzo-forest", "quartz"] as const;
 export type Theme = (typeof THEMES)[number];
 
 const T_KEY = "hermetika-theme";
 
-const ThemeCtx = createContext<{ theme: Theme; setTheme: (t: Theme) => void }>({ theme: "sanzo-ember", setTheme: () => {} });
+const ThemeCtx = createContext<{ theme: Theme; setTheme: (t: Theme) => void }>({ theme: "sanzo-slate", setTheme: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const s = localStorage.getItem(T_KEY) as Theme | null;
-    return s && THEMES.includes(s) ? s : "sanzo-ember";
+    return s && THEMES.includes(s) ? s : "sanzo-slate";
   });
 
   useEffect(() => {

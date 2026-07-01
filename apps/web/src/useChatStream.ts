@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { ChatMessage } from "@hermetika/shared";
 import { authHeader } from "./supabase";
 import { API_BASE } from "./config";
+import { setRate } from "./rateStore";
 
 interface StreamDelta {
   choices?: { delta?: { content?: string } }[];
@@ -41,7 +42,16 @@ export function useChatStream(): UseChatStream {
         }),
       });
 
+      if (res.status === 402) {
+        setRate(0, false);
+        setError("free limit reached — subscribe for unlimited");
+        return "";
+      }
       if (!res.ok) throw new Error(`/v1/chat/completions → ${res.status}`);
+      // reflect the server's rate-limit verdict globally (shared across windows)
+      const tier = res.headers.get("x-hermetika-tier");
+      const rem = res.headers.get("x-hermetika-free-remaining");
+      setRate(rem != null ? Number(rem) : null, tier === "pro");
       const returned = res.headers.get("x-hermetika-session");
       if (returned) sessionId.current = returned;
       if (!res.body) throw new Error("no response body to stream");

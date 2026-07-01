@@ -2,33 +2,34 @@ import { useEffect, useRef, useState } from "react";
 import { type Model, type ChatMessage, PRICING } from "@hermetika/shared";
 import { laneLabel } from "./api";
 import { useChatStream } from "./useChatStream";
+import { useRate } from "./rateStore";
 import { MercurySigil } from "./MercurySigil";
 
-const DEMO_INFERENCES = 20;
+const FREE_LIFETIME = 20; // mirrors the gateway's FREE.lifetime, for the quota bar
 
-export function SandboxWindow({ model, models, onSwap }: { model: Model; models: Model[]; onSwap: (m: Model) => void }) {
+// model carries extra fields the gateway attaches beyond the shared type.
+type FullModel = Model & { hfUrl?: string | null; resident?: boolean };
+
+export function SandboxWindow({ model, models, onSwap }: { model: FullModel; models: Model[]; onSwap: (m: Model) => void }) {
   const { output, streaming, error, send, reset } = useChatStream();
+  const { remaining, pro } = useRate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
-  const [used, setUsed] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // swapping the window's model starts a fresh transcript.
-  useEffect(() => { reset(); setMessages([]); setUsed(0); }, [model.slug, reset]);
-  // keep the transcript pinned to the latest turn.
+  useEffect(() => { reset(); setMessages([]); }, [model.slug, reset]);
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, output]);
 
   const price = model.priceUsd ?? PRICING.defaultMonthlyUsd;
-  const left = Math.max(0, DEMO_INFERENCES - used);
-  const pct = (left / DEMO_INFERENCES) * 100;
+  const spent = !pro && remaining === 0;
+  const pct = pro ? 100 : remaining == null ? 100 : (remaining / FREE_LIFETIME) * 100;
 
   const fire = async () => {
     const text = prompt.trim();
-    if (!text || streaming || left === 0) return;
+    if (!text || streaming || spent) return;
     const next: ChatMessage[] = [...messages, { role: "user", content: text }];
     setMessages(next);
     setPrompt("");
-    setUsed((n) => n + 1);
     const reply = await send(model.slug, next);
     if (reply) setMessages((m) => [...m, { role: "assistant", content: reply }]);
   };
@@ -57,6 +58,15 @@ export function SandboxWindow({ model, models, onSwap }: { model: Model; models:
         </select>
       </div>
 
+      <div className="sbx-info">
+        {model.author && <span><span className="label">author</span> {model.author}</span>}
+        {model.params && <span><span className="label">params</span> {model.params}</span>}
+        {model.license && <span><span className="label">license</span> {model.license}</span>}
+        {model.lineage && <span><span className="label">lineage</span> {model.lineage}</span>}
+        {model.kind && <span><span className="label">kind</span> {model.kind}</span>}
+        {model.hfUrl && <a href={model.hfUrl} target="_blank" rel="noopener noreferrer">hugging face ↗</a>}
+      </div>
+
       <div className="transcript" ref={scrollRef}>
         {messages.length === 0 && !streaming && <div className="transcript-empty label">speak to the model — enter to send</div>}
         {messages.map((m, i) => (
@@ -71,7 +81,7 @@ export function SandboxWindow({ model, models, onSwap }: { model: Model; models:
             <div className="msg-body">{output || "…"}</div>
           </div>
         )}
-        {error && <div className="msg-error label">error · {error}</div>}
+        {error && <div className="msg-error label">{error}</div>}
       </div>
 
       <form className="playground" onSubmit={onSubmit}>
@@ -82,15 +92,16 @@ export function SandboxWindow({ model, models, onSwap }: { model: Model; models:
           onKeyDown={onKey}
           placeholder="prompt · enter to send · shift+enter for newline"
           rows={2}
+          disabled={spent}
         />
         <div className="playground-actions">
-          <button className="sub-btn" type="submit" disabled={streaming || left === 0}>
+          <button className="sub-btn" type="submit" disabled={streaming || spent}>
             {streaming ? "streaming…" : "run"}
           </button>
           <div className="quota-bar" style={{ flex: 1 }}>
-            <div className={`quota-fill ${pct <= 20 ? "low" : ""}`} style={{ width: `${pct}%` }} />
+            <div className={`quota-fill ${!pro && pct <= 20 ? "low" : ""}`} style={{ width: `${pct}%` }} />
           </div>
-          <span className="label">{left} left</span>
+          <span className="label">{pro ? "unlimited" : remaining == null ? "free tier" : `${remaining} left`}</span>
         </div>
       </form>
     </div>
