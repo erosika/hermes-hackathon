@@ -7,7 +7,7 @@ interface SidebarProps {
   onOpen: (model: Model) => void;
 }
 
-const CATEGORY_ORDER = ["esoteric", "ascii", "art", "tech", "story", "puzzle", "wordplay", "music", "visual", "uncategorized"];
+const CATEGORY_ORDER = ["ascii", "art", "esoteric", "tech", "story", "puzzle", "wordplay", "music", "visual", "uncategorized"];
 
 export function Sidebar({ models, openSlugs, onOpen }: SidebarProps) {
   const groups = new Map<string, Model[]>();
