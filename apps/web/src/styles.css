@@ -25,6 +25,7 @@
   --radius: 3px;
   --mono: "Corbi Mono S", ui-monospace, "SF Mono", Menlo, monospace;
   --font-display: "Constantia", Georgia, "Times New Roman", serif;
+  --font-body: ui-serif, "New York", Georgia, "Times New Roman", serif;
 }
 
 /* ── theme presets — authentic Sanzo Wada pigments (Dictionary of Color Combinations).
@@ -185,11 +186,12 @@ body {
 /* sign-in modal */
 .signin { width: 340px; max-width: calc(100vw - 32px); background: var(--panel); border: 1px solid var(--accent); border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
 .signin-body { padding: calc(var(--grid) * 2); display: flex; flex-direction: column; gap: var(--grid); }
-.signin-copy { margin: 0; font-size: 13px; line-height: 1.5; color: var(--dim); }
-.signin-in { max-width: none; text-transform: none; letter-spacing: 0; font-size: 13px; padding: 8px 10px; }
+.signin-copy { margin: 0; font-family: var(--font-body); font-size: 16px; line-height: 1.55; color: var(--ink); }
+.signin-in { max-width: none; text-transform: none; letter-spacing: 0; font-size: 14px; padding: 9px 11px; }
+.signin-in::placeholder { text-transform: none; color: var(--dim); }
 .signin-go { width: 100%; text-align: center; }
 .signin-err { color: var(--accent-rust); }
-.signin-sent { margin: 0; font-size: 14px; color: var(--accent-sage); }
+.signin-sent { margin: 0; font-family: var(--font-body); font-size: 17px; line-height: 1.5; color: var(--accent-sage); }
 .topnav-tabs { display: flex; gap: var(--grid); flex: 1; overflow-x: auto; }
 .tab {
   display: flex;
@@ -371,13 +373,13 @@ body {
 .win-title { font-size: 11px; letter-spacing: 0.08em; color: var(--chrome-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .win-actions { display: flex; gap: 4px; }
 .win-btn {
-  width: 14px; height: 14px;
+  width: 17px; height: 17px;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--line);
   border-radius: 2px;
   background: transparent;
   color: var(--dim);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
   cursor: pointer;
   padding: 0;
@@ -387,10 +389,19 @@ body {
 .win-body { flex: 1; min-height: 0; overflow: auto; padding: calc(var(--grid) * 1.5); display: flex; flex-direction: column; }
 
 /* minimized collapse bars */
-.win.min-vertical .win-titlebar { writing-mode: vertical-rl; height: 100%; justify-content: flex-start; padding: 8px 6px; }
+.win.min-vertical .win-titlebar {
+  flex-direction: column;
+  writing-mode: horizontal-tb;
+  height: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 8px 4px;
+}
+.win.min-vertical .win-actions { flex-direction: column; gap: 5px; order: -1; }
+.win.min-vertical .win-title { writing-mode: vertical-rl; text-orientation: mixed; margin-top: 4px; }
 .win.min-vertical .win-body,
 .win.min-horizontal .win-body { display: none; }
-.win.min-vertical .win-actions { writing-mode: horizontal-tb; }
 
 /* ── status bar (survival ledger, condensed) ── */
 .status-bar {
