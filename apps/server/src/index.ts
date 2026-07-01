@@ -10,6 +10,7 @@ import { subscribeUrl, portalUrl, PLAN } from "./billing";
 import { readIdentity, authConfigured } from "./auth";
 import { checkFreeTier, FREE } from "./ratelimit";
 import { newSession } from "./honcho";
+import { ensureSession, appendMessages, listSessions, getSessionMessages } from "./chats";
 import { verifyAndParse, handleStripeEvent, type StripeEventLike } from "./webhooks";
 import { nudge, nudgeSummary } from "./nudge";
 import type { ChatRequest, Model } from "@hermetika/shared";
@@ -97,6 +98,19 @@ const app = new Elysia()
   // subscription business — one plan, MRR + income log
   .get("/api/revenue", () => ({ ...subscriptionSummary(), incomeTotal: incomeUsd(), entries: incomeEntries() }))
   .get("/api/subscriptions", () => listSubscriptions())
+
+  // chat history — signed-in users' own transcripts (Supabase system-of-record)
+  .get("/api/sessions", async ({ request, status }) => {
+    const id = await readIdentity(request);
+    if (!id) return status(401, { error: "sign in first" });
+    return await listSessions(id.email);
+  })
+  .get("/api/sessions/:id", async ({ params, request, status }) => {
+    const id = await readIdentity(request);
+    if (!id) return status(401, { error: "sign in first" });
+    const s = await getSessionMessages(params.id, id.email);
+    return s ?? status(404, { error: "session not found" });
+  })
   .get("/api/subscribe", async ({ request }) => {
     const id = await readIdentity(request);
     return await subscribeUrl(id?.email);
@@ -162,6 +176,11 @@ const app = new Elysia()
         freeRemaining = rl.remaining;
       }
       const session = newSession(req.sessionId ?? `s_${req.model}`);
+      const lastUser = [...req.messages].reverse().find((m) => m.role === "user");
+      if (email) {
+        await ensureSession(session.id, email, model.slug, lastUser?.content.slice(0, 80));
+        if (lastUser) await appendMessages(session.id, [{ role: "user", content: lastUser.content }]);
+      }
 
       try {
         const { res, resolved } = await dispatch(model, req);
@@ -174,13 +193,34 @@ const app = new Elysia()
         };
 
         if (req.stream) {
-          return new Response(res.body, {
+          // tee the SSE stream so the completed assistant reply persists to the transcript
+          let assistant = "";
+          const persist = new TransformStream<Uint8Array, Uint8Array>({
+            transform(chunk, ctrl) {
+              ctrl.enqueue(chunk);
+              for (const line of new TextDecoder().decode(chunk).split("\n")) {
+                const t = line.trim();
+                if (!t.startsWith("data:")) continue;
+                const p = t.slice(5).trim();
+                if (p === "[DONE]") continue;
+                try { assistant += JSON.parse(p).choices?.[0]?.delta?.content ?? ""; } catch {}
+              }
+            },
+            flush() {
+              if (email && assistant) void appendMessages(session.id, [{ role: "assistant", content: assistant }]);
+            },
+          });
+          return new Response(res.body?.pipeThrough(persist), {
             status: res.status,
             headers: { "content-type": res.headers.get("content-type") ?? "text/event-stream", ...headers },
           });
         }
 
         const json = await res.json();
+        const reply = json?.choices?.[0]?.message?.content;
+        if (email && typeof reply === "string") {
+          await appendMessages(session.id, [{ role: "assistant", content: reply, tokens: json?.usage?.total_tokens }]);
+        }
         return new Response(JSON.stringify(json), {
           status: res.status,
           headers: { "content-type": "application/json", ...headers },

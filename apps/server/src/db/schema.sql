@@ -78,3 +78,35 @@ create index if not exists idx_usage_created_at on usage (created_at);
 create index if not exists idx_ledger_kind on ledger (kind);
 create index if not exists idx_ledger_created_at on ledger (created_at);
 create index if not exists idx_shares_model_slug on shares (model_slug);
+
+-- chat transcripts — system of record for talk-to-models sessions (Honcho = optional memory layer on top).
+create table if not exists chat_sessions (
+  id         text primary key,
+  user_email text not null,
+  model_slug text not null,
+  title      text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists chat_messages (
+  id         text primary key,
+  session_id text not null references chat_sessions(id) on delete cascade,
+  role       text not null,             -- user | assistant | system
+  content    text not null,
+  tokens     integer,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_chat_sessions_user on chat_sessions (user_email, updated_at desc);
+create index if not exists idx_chat_messages_session on chat_messages (session_id, created_at);
+
+-- RLS: users see only their own chats (gateway writes with the service key, which bypasses RLS).
+alter table chat_sessions enable row level security;
+alter table chat_messages enable row level security;
+
+create policy chat_sessions_owner on chat_sessions
+  for all using (user_email = auth.jwt() ->> 'email') with check (user_email = auth.jwt() ->> 'email');
+
+create policy chat_messages_owner on chat_messages
+  for all using (session_id in (select id from chat_sessions where user_email = auth.jwt() ->> 'email'));
