@@ -8,7 +8,6 @@ import { Sidebar } from "./Sidebar";
 import { Desktop, type WinState } from "./Desktop";
 import { StatusBar } from "./StatusBar";
 import { ShortcutsHelp } from "./ShortcutsHelp";
-import { CreditsWidget } from "./CreditsWidget";
 import { useWindowKeys } from "./useWindowKeys";
 import type { LayoutMode } from "./lib/TilingLayoutManager";
 
@@ -135,7 +134,6 @@ export function App() {
           <StatusBar />
         </div>
         {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
-        <CreditsWidget />
       </AuthProvider>
     </ThemeProvider>
   );

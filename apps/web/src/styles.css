@@ -144,8 +144,8 @@ body {
 }
 
 .label {
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: 11px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--dim);
 }
@@ -174,10 +174,10 @@ body {
 }
 .topnav-brand {
   font-family: var(--font-display);
-  font-size: 20px;
-  letter-spacing: 0.06em;
+  font-size: 26px;
+  letter-spacing: 0.05em;
   font-weight: 700;
-  color: var(--chrome-3);
+  color: var(--chrome-2);
 }
 .topnav-tabs { display: flex; gap: var(--grid); flex: 1; overflow-x: auto; }
 .tab {
@@ -365,10 +365,10 @@ body {
   padding: 6px calc(var(--grid) * 2);
   border-top: 1px solid var(--line);
   background: var(--panel);
-  font-size: 11px;
+  font-size: 13px;
 }
 .status-bar .stat { display: flex; align-items: baseline; gap: 6px; }
-.status-bar .stat b { font-variant-numeric: tabular-nums; color: var(--chrome-3); font-weight: 400; }
+.status-bar .stat b { font-variant-numeric: tabular-nums; color: var(--chrome-3); font-weight: 400; font-size: 14px; }
 .status-bar .stat.ok b { color: var(--accent-sage); }
 .status-bar .spacer { flex: 1; }
 
@@ -389,8 +389,32 @@ body {
 
 /* ── sandbox window content ── */
 .sbx { display: flex; flex-direction: column; gap: var(--grid); height: 100%; }
-.sbx-meta { display: flex; align-items: center; gap: var(--grid); flex-wrap: wrap; }
-.sbx-price { margin-left: auto; color: var(--chrome-3); font-size: 12px; }
+.sbx-meta { display: flex; align-items: center; gap: calc(var(--grid) * 1.5); padding-bottom: var(--grid); border-bottom: 1px solid var(--line); }
+.sbx-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sbx-model { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--chrome-2); margin: 0; line-height: 1.1; }
+.sbx-lane { text-transform: none; letter-spacing: 0.02em; }
+.sbx-swap { margin-left: auto; max-width: 150px; }
+
+/* multi-turn transcript */
+.transcript {
+  flex: 1; min-height: 120px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: calc(var(--grid) * 1.5);
+  padding: var(--grid) 2px;
+}
+.transcript-empty { padding: var(--grid); }
+.msg { display: flex; flex-direction: column; gap: 4px; }
+.msg-role { font-size: 10px; }
+.msg.user .msg-role { color: var(--accent); }
+.msg-body {
+  font-size: 14px; line-height: 1.6; color: var(--ink);
+  white-space: pre-wrap; word-break: break-word;
+}
+.msg.user .msg-body { color: var(--chrome-3); }
+.msg.assistant .msg-body {
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: calc(var(--grid) * 1.25);
+}
+.msg-error { color: var(--accent-rust); }
 
 .sub-btn {
   font-family: var(--mono);
@@ -520,8 +544,8 @@ body {
 .account-actions .sub-btn, .account-actions .seg-btn { width: 100%; text-align: center; }
 .account-hint { text-transform: none; letter-spacing: 0; }
 
-/* ── credits / about corner widget (bottom-right) ── */
-.credits { position: fixed; bottom: 16px; right: 16px; z-index: 90; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+/* ── credits / about widget — lives in the footer's bottom-right, card pops up ── */
+.credits { position: relative; z-index: 90; display: inline-flex; }
 .credits-pill {
   display: flex; align-items: center; gap: 8px;
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
@@ -531,13 +555,15 @@ body {
 .credits-pill:hover { color: var(--ink); border-color: var(--accent); }
 .credits-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
 .credits-card {
+  position: absolute; bottom: calc(100% + 10px); right: 0;
   width: 340px; max-width: calc(100vw - 32px);
   background: var(--panel); border: 1px solid var(--accent); border-radius: var(--radius);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); padding: calc(var(--grid) * 2);
   display: flex; flex-direction: column; gap: var(--grid);
 }
+.nous-icon { display: block; border-radius: 2px; }
 .credits-head { display: flex; align-items: center; justify-content: space-between; }
-.mark-sm { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.04em; color: var(--chrome-3); font-weight: 700; }
+.mark-sm { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.03em; color: var(--chrome-2); font-weight: 700; }
 .credits-sub { margin-top: -4px; }
 .credits-list { display: flex; flex-direction: column; gap: calc(var(--grid) * 1.25); margin-top: var(--grid); }
 .credit-row { display: flex; flex-direction: column; gap: 3px; }

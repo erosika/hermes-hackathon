@@ -18,5 +18,5 @@ export function NvidiaIcon({ size = 16 }: { size?: number }) {
 }
 
 export function NousMark() {
-  return <span className="nous-mark">NOUS</span>;
+  return <img className="nous-icon" src="/nous.png" width={16} height={16} alt="Nous" />;
 }

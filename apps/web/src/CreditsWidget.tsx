@@ -26,7 +26,7 @@ export function CreditsWidget() {
             transition={spring}
           >
             <div className="credits-head">
-              <span className="mark-sm">⚷ HERMETIKA</span>
+              <span className="mark-sm">☿ HERMETIKA</span>
               <button className="win-btn close" onClick={() => setOpen(false)} title="close">×</button>
             </div>
             <div className="credits-sub label">self-hosted model inference · subscription-funded</div>

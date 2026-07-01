@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getRevenue, getSubscribe, type RevenueView, type SubscribeLink } from "./api";
 import { useAuth } from "./AuthProvider";
+import { CreditsWidget } from "./CreditsWidget";
 
 export function StatusBar() {
   const { email, subscribed, refresh } = useAuth();
@@ -49,6 +50,7 @@ export function StatusBar() {
           subscribe · {price}{link && !link.live ? " · demo" : ""}
         </button>
       )}
+      <CreditsWidget />
     </footer>
   );
 }

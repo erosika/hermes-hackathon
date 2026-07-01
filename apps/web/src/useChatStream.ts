@@ -8,10 +8,10 @@ interface StreamDelta {
 }
 
 export interface UseChatStream {
-  output: string;
+  output: string; // the in-flight assistant reply
   streaming: boolean;
   error: string | null;
-  send: (modelSlug: string, prompt: string) => Promise<void>;
+  send: (modelSlug: string, messages: ChatMessage[]) => Promise<string>;
   reset: () => void;
 }
 
@@ -20,15 +20,14 @@ export function useChatStream(): UseChatStream {
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // persist honcho session across turns so continuity survives re-renders.
+  // persist the honcho/gateway session id across turns so history is saved server-side.
   const sessionId = useRef<string | null>(null);
 
-  const send = useCallback(async (modelSlug: string, prompt: string) => {
+  const send = useCallback(async (modelSlug: string, messages: ChatMessage[]): Promise<string> => {
     setStreaming(true);
     setError(null);
     setOutput("");
-
-    const messages: ChatMessage[] = [{ role: "user", content: prompt }];
+    let acc = "";
 
     try {
       const res = await fetch(`${API_BASE}/v1/chat/completions`, {
@@ -43,10 +42,8 @@ export function useChatStream(): UseChatStream {
       });
 
       if (!res.ok) throw new Error(`/v1/chat/completions → ${res.status}`);
-
       const returned = res.headers.get("x-hermetika-session");
       if (returned) sessionId.current = returned;
-
       if (!res.body) throw new Error("no response body to stream");
 
       const reader = res.body.getReader();
@@ -56,26 +53,20 @@ export function useChatStream(): UseChatStream {
       for (;;) {
         const { value, done } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
-
-        // hold back the trailing fragment; it may be a partial line across reads.
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
-
         for (const raw of lines) {
           const line = raw.trim();
           if (!line.startsWith("data: ")) continue;
-
           const payload = line.slice(6);
           if (payload === "[DONE]") continue;
-
           try {
             const chunk = JSON.parse(payload) as StreamDelta;
             const token = chunk.choices?.[0]?.delta?.content;
-            if (token) setOutput((prev) => prev + token);
+            if (token) { acc += token; setOutput(acc); }
           } catch {
-            // skip keep-alives / non-JSON frames rather than aborting the stream.
+            // skip keep-alives / non-JSON frames
           }
         }
       }
@@ -84,11 +75,13 @@ export function useChatStream(): UseChatStream {
     } finally {
       setStreaming(false);
     }
+    return acc;
   }, []);
 
   const reset = useCallback(() => {
     setOutput("");
     setError(null);
+    sessionId.current = null;
   }, []);
 
   return { output, streaming, error, send, reset };
