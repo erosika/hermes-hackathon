@@ -41,8 +41,14 @@ export function listSubscriptions(): Subscription[] {
   return subs;
 }
 
+// comped accounts — HERMETIKA_PRO_EMAILS (comma-separated) are always pro, regardless of Stripe.
+function proAllowlist(): string[] {
+  return (process.env.HERMETIKA_PRO_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
+
 // gate check — does this customer hold an active subscription?
 export function isSubscribed(customerRef?: string): boolean {
+  if (customerRef && proAllowlist().includes(customerRef.toLowerCase())) return true;
   return subs.some((s) => s.status === "active" && (customerRef === undefined || s.customerRef === customerRef));
 }
 
