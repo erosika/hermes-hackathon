@@ -8,7 +8,7 @@ export const PLAN = {
   slug: "hermetika-pro",
   name: "Hermetika Pro",
   blurb: "unlimited access",
-  priceUsd: Number(process.env.HERMETIKA_PRICE_USD ?? process.env.PANTHEON_PRICE_USD ?? 2),
+  priceUsd: Number(process.env.HERMETIKA_PRICE_USD ?? process.env.PANTHEON_PRICE_USD ?? 3),
 } as const;
 
 export interface SubscribeLink {

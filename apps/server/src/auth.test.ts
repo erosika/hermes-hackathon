@@ -48,16 +48,17 @@ describe("supabase token verification", () => {
 describe("free tier", () => {
   beforeEach(() => __resetRateLimitForTest());
 
-  test("allows up to the lifetime cap then blocks", () => {
-    let last = checkFreeTier("id-a", "1.1.1.1");
-    for (let i = 1; i < FREE.lifetime; i++) last = checkFreeTier("id-a", "1.1.1.1");
+  test("allows FREE.perModel messages per model then blocks", () => {
+    let last = checkFreeTier("id-a", "model-x");
+    for (let i = 1; i < FREE.perModel; i++) last = checkFreeTier("id-a", "model-x");
     expect(last.allowed).toBe(true);
     expect(last.remaining).toBe(0);
-    expect(checkFreeTier("id-a", "1.1.1.1").allowed).toBe(false);
+    expect(checkFreeTier("id-a", "model-x").allowed).toBe(false);
   });
 
-  test("daily IP cap blocks distinct identities sharing an IP", () => {
-    for (let i = 0; i < FREE.daily; i++) checkFreeTier(`id-${i}`, "9.9.9.9");
-    expect(checkFreeTier("id-new", "9.9.9.9").allowed).toBe(false);
+  test("each model has its own allowance", () => {
+    for (let i = 0; i < FREE.perModel; i++) checkFreeTier("id-a", "model-x");
+    expect(checkFreeTier("id-a", "model-x").allowed).toBe(false);
+    expect(checkFreeTier("id-a", "model-y").allowed).toBe(true);
   });
 });

@@ -2,17 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { type Model, type ChatMessage, PRICING } from "@hermetika/shared";
 import { laneLabel } from "./api";
 import { useChatStream } from "./useChatStream";
-import { useRate } from "./rateStore";
 import { MercurySigil } from "./MercurySigil";
 
-const FREE_LIFETIME = 20; // mirrors the gateway's FREE.lifetime, for the quota bar
+const FREE_PER_MODEL = 5; // mirrors the gateway's FREE.perModel, for the quota bar
 
 // model carries extra fields the gateway attaches beyond the shared type.
 type FullModel = Model & { hfUrl?: string | null; resident?: boolean };
 
 export function SandboxWindow({ model, models, onSwap }: { model: FullModel; models: Model[]; onSwap: (m: Model) => void }) {
-  const { output, streaming, error, send, reset } = useChatStream();
-  const { remaining, pro } = useRate();
+  const { output, streaming, error, remaining, pro, send, reset } = useChatStream();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -23,7 +21,7 @@ export function SandboxWindow({ model, models, onSwap }: { model: FullModel; mod
   const price = model.priceUsd ?? PRICING.defaultMonthlyUsd;
   const desc = (model.cardMd ?? "").replace(/^#.*\n?/, "").trim(); // drop the card heading
   const spent = !pro && remaining === 0;
-  const pct = pro ? 100 : remaining == null ? 100 : (remaining / FREE_LIFETIME) * 100;
+  const pct = pro ? 100 : remaining == null ? 100 : (remaining / FREE_PER_MODEL) * 100;
 
   const fire = async () => {
     const text = prompt.trim();

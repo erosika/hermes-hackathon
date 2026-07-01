@@ -3,14 +3,14 @@ import { Reorder } from "framer-motion";
 import { THEMES, useTheme, type Theme } from "./ThemeProvider";
 import { useAuth } from "./AuthProvider";
 import { AccountMenu } from "./AccountMenu";
+import { SignInModal } from "./SignInModal";
 import type { LayoutMode } from "./lib/TilingLayoutManager";
 import type { WinState } from "./Desktop";
 
 function AuthCluster() {
-  const { email, subscribed, configured, signIn } = useAuth();
-  const [draft, setDraft] = useState("");
-  const [state, setState] = useState<"idle" | "busy" | "sent" | "error">("idle");
+  const { email, subscribed, configured } = useAuth();
   const [account, setAccount] = useState(false);
+  const [signin, setSignin] = useState(false);
 
   if (!configured) return <span className="label" title="set VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY">auth not configured</span>;
 
@@ -26,35 +26,11 @@ function AuthCluster() {
     );
   }
 
-  if (state === "sent") return <span className="label">check your email for the link ↗</span>;
-
-  const submit = async () => {
-    const v = draft.trim();
-    if (!v || state === "busy") return;
-    setState("busy");
-    try {
-      await signIn(v);
-      setState("sent");
-    } catch {
-      setState("error");
-    }
-  };
-
   return (
-    <form className="auth" noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }}>
-      <input
-        className={`pick auth-in ${state === "error" ? "bad" : ""}`}
-        value={draft}
-        onChange={(e) => { setDraft(e.target.value); if (state === "error") setState("idle"); }}
-        placeholder="email · magic link"
-        type="text"
-        inputMode="email"
-        autoComplete="email"
-      />
-      <button className="seg-btn" type="submit" disabled={state === "busy" || !draft.trim()}>
-        {state === "busy" ? "…" : "sign in"}
-      </button>
-    </form>
+    <>
+      <button className="seg-btn" onClick={() => setSignin(true)}>sign in</button>
+      {signin && <SignInModal onClose={() => setSignin(false)} />}
+    </>
   );
 }
 
@@ -85,7 +61,10 @@ export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, o
 
   return (
     <nav className="topnav">
-      <span className="topnav-brand">HERMETIKA</span>
+      <div className="brandwrap">
+        <span className="topnav-brand">☿ HERMETIKA</span>
+        <span className="tagline">eri's atlas of models</span>
+      </div>
 
       <Reorder.Group as="div" axis="x" values={ids} onReorder={onReorder} className="topnav-tabs">
         {windows.map((w) => (

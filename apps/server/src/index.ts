@@ -175,10 +175,10 @@ const app = new Elysia()
       const id = await readIdentity(request);
       const email = id?.email ?? null;
       const pro = email ? isSubscribed(email) : false;
-      let freeRemaining: number = FREE.lifetime;
+      let freeRemaining: number = FREE.perModel;
       if (!pro) {
         const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-        const rl = checkFreeTier(email ?? ip, ip);
+        const rl = checkFreeTier(email ?? ip, model.slug);
         if (!rl.allowed) return status(402, { error: rl.reason, upgrade: "/api/subscribe" });
         freeRemaining = rl.remaining;
       }

@@ -6,7 +6,7 @@ import { StripeIcon, NvidiaIcon, NousMark } from "./Icons";
 const CREDITS: { icon: ReactNode; k: string; v: string }[] = [
   { icon: <NvidiaIcon />, k: "nvidia", v: "all inference runs on two DGX Sparks I own — the models are self-hosted over Tailscale, not rented cloud" },
   { icon: <StripeIcon />, k: "stripe", v: "a $2/mo subscription (Stripe Checkout + billing portal) pays for the compute" },
-  { icon: <NousMark />, k: "hermes", v: "the operator layer — curates which models are served and gates access to subscribers" },
+  { icon: <NousMark />, k: "hermes", v: "the operator layer — runs the business + curates which models are served" },
 ];
 
 export function CreditsWidget() {
@@ -29,7 +29,7 @@ export function CreditsWidget() {
               <span className="mark-sm">☿ HERMETIKA</span>
               <button className="win-btn close" onClick={() => setOpen(false)} title="close">×</button>
             </div>
-            <div className="credits-sub label">self-hosted model inference · subscription-funded</div>
+            <div className="credits-sub label">eri's atlas of models</div>
 
             <div className="credits-list">
               {CREDITS.map(({ icon, k, v }) => (

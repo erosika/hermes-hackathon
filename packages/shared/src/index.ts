@@ -87,5 +87,5 @@ export interface Subscription {
 
 // per-model display price (the pantheon shows these; billing is one platform plan).
 export const PRICING = {
-  defaultMonthlyUsd: 2,
+  defaultMonthlyUsd: 3,
 } as const;

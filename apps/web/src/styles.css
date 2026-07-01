@@ -21,7 +21,7 @@
 /* ── shared scale + fonts (one mono, one display) ── */
 :root {
   --grid: 8px;
-  --topbar-h: 40px;
+  --topbar-h: 58px;
   --radius: 3px;
   --mono: "Corbi Mono S", ui-monospace, "SF Mono", Menlo, monospace;
   --font-display: "Constantia", Georgia, "Times New Roman", serif;
@@ -172,13 +172,24 @@ body {
   border-bottom: 1px solid var(--line);
   background: var(--panel);
 }
+.brandwrap { display: flex; flex-direction: column; gap: 1px; line-height: 1; }
 .topnav-brand {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 26px;
   letter-spacing: 0.05em;
   font-weight: 700;
   color: var(--chrome-2);
 }
+.tagline { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--dim); }
+
+/* sign-in modal */
+.signin { width: 340px; max-width: calc(100vw - 32px); background: var(--panel); border: 1px solid var(--accent); border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+.signin-body { padding: calc(var(--grid) * 2); display: flex; flex-direction: column; gap: var(--grid); }
+.signin-copy { margin: 0; font-size: 13px; line-height: 1.5; color: var(--dim); }
+.signin-in { max-width: none; text-transform: none; letter-spacing: 0; font-size: 13px; padding: 8px 10px; }
+.signin-go { width: 100%; text-align: center; }
+.signin-err { color: var(--accent-rust); }
+.signin-sent { margin: 0; font-size: 14px; color: var(--accent-sage); }
 .topnav-tabs { display: flex; gap: var(--grid); flex: 1; overflow-x: auto; }
 .tab {
   display: flex;

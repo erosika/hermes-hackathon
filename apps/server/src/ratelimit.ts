@@ -1,11 +1,10 @@
-// free-tier limiter — a taste, then subscribe. subscribers bypass this entirely.
-// two ceilings: a lifetime trial per identity + a daily cap per IP (abuse guard).
-// in-memory; single instance. Redis-backed is the multi-node upgrade.
+// free-tier limiter — 5 messages per model per identity, then subscribe.
+// keyed by (identity, model) so each model gets its own free allowance.
+// in-memory, single instance; Redis-backed is the multi-node upgrade.
 
-export const FREE = { lifetime: 20, daily: 20 } as const;
+export const FREE = { perModel: 5 } as const;
 
-const lifetimeUsed = new Map<string, number>();
-const dailyUsed = new Map<string, number>();
+const used = new Map<string, number>(); // key: `${identity}|${modelSlug}`
 
 export interface RateResult {
   allowed: boolean;
@@ -13,22 +12,16 @@ export interface RateResult {
   reason?: string;
 }
 
-export function checkFreeTier(identity: string, ip: string, now = new Date()): RateResult {
-  const life = lifetimeUsed.get(identity) ?? 0;
-  if (life >= FREE.lifetime) {
-    return { allowed: false, remaining: 0, reason: `free trial used up (${FREE.lifetime} calls) — subscribe for unlimited` };
+export function checkFreeTier(identity: string, modelSlug: string): RateResult {
+  const key = `${identity}|${modelSlug}`;
+  const n = used.get(key) ?? 0;
+  if (n >= FREE.perModel) {
+    return { allowed: false, remaining: 0, reason: `free limit: ${FREE.perModel} messages per model — subscribe for unlimited` };
   }
-  const dayKey = `${ip}|${now.toISOString().slice(0, 10)}`;
-  const day = dailyUsed.get(dayKey) ?? 0;
-  if (day >= FREE.daily) {
-    return { allowed: false, remaining: 0, reason: `daily free limit (${FREE.daily}/day) — subscribe for unlimited` };
-  }
-  lifetimeUsed.set(identity, life + 1);
-  dailyUsed.set(dayKey, day + 1);
-  return { allowed: true, remaining: FREE.lifetime - (life + 1) };
+  used.set(key, n + 1);
+  return { allowed: true, remaining: FREE.perModel - (n + 1) };
 }
 
 export function __resetRateLimitForTest(): void {
-  lifetimeUsed.clear();
-  dailyUsed.clear();
+  used.clear();
 }

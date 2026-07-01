@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from "react";
 import type { ChatMessage } from "@hermetika/shared";
 import { authHeader } from "./supabase";
 import { API_BASE } from "./config";
-import { setRate } from "./rateStore";
 
 interface StreamDelta {
   choices?: { delta?: { content?: string } }[];
@@ -12,6 +11,8 @@ export interface UseChatStream {
   output: string; // the in-flight assistant reply
   streaming: boolean;
   error: string | null;
+  remaining: number | null; // free messages left for THIS model (null until first call)
+  pro: boolean;
   send: (modelSlug: string, messages: ChatMessage[]) => Promise<string>;
   reset: () => void;
 }
@@ -20,6 +21,8 @@ export function useChatStream(): UseChatStream {
   const [output, setOutput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [pro, setPro] = useState(false);
 
   // persist the honcho/gateway session id across turns so history is saved server-side.
   const sessionId = useRef<string | null>(null);
@@ -43,15 +46,16 @@ export function useChatStream(): UseChatStream {
       });
 
       if (res.status === 402) {
-        setRate(0, false);
+        setRemaining(0);
         setError("free limit reached — subscribe for unlimited");
         return "";
       }
       if (!res.ok) throw new Error(`/v1/chat/completions → ${res.status}`);
-      // reflect the server's rate-limit verdict globally (shared across windows)
+      // reflect the server's per-model rate-limit verdict
       const tier = res.headers.get("x-hermetika-tier");
       const rem = res.headers.get("x-hermetika-free-remaining");
-      setRate(rem != null ? Number(rem) : null, tier === "pro");
+      setPro(tier === "pro");
+      setRemaining(rem != null ? Number(rem) : null);
       const returned = res.headers.get("x-hermetika-session");
       if (returned) sessionId.current = returned;
       if (!res.body) throw new Error("no response body to stream");
@@ -94,5 +98,5 @@ export function useChatStream(): UseChatStream {
     sessionId.current = null;
   }, []);
 
-  return { output, streaming, error, send, reset };
+  return { output, streaming, error, remaining, pro, send, reset };
 }
