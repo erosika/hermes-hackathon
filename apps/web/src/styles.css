@@ -169,3 +169,194 @@ header.bar {
 
 .backend-gpu { color: var(--chrome-3); }
 .backend-proxy { color: var(--dim); }
+
+/* ── pantheon model card — a selectable cell variant, lives inside .grid ── */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: calc(var(--grid) * 2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid);
+  min-height: 120px;
+  cursor: pointer;
+  /* transition drives the hover lift; disabled for reduced-motion below */
+  transition: border-color 120ms linear, box-shadow 120ms linear, transform 120ms linear;
+}
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 1px 0 #000, 2px 2px 0 var(--line);
+  transform: translate(-1px, -1px);
+}
+
+/* ── model sandbox page ── */
+.sandbox {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: calc(var(--grid) * 3);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--grid) * 2);
+}
+
+/* raised metal header bar — title left, actions right */
+.sandbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--grid);
+  padding: calc(var(--grid) * 1.5) calc(var(--grid) * 2);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 var(--chrome-1), 0 1px 0 #000;
+}
+.sandbox-header .title { font-size: 15px; color: var(--chrome-3); letter-spacing: 0.04em; }
+.sandbox-header .actions { display: flex; align-items: center; gap: var(--grid); }
+
+/* subscribe control — hardware panel, not a pill */
+.sub-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  padding: calc(var(--grid) * 0.75) calc(var(--grid) * 1.5);
+  cursor: pointer;
+  transition: box-shadow 120ms linear, background-color 120ms linear;
+}
+.sub-btn:hover {
+  background: var(--bg);
+  box-shadow: 0 0 6px rgba(201, 182, 255, 0.35);
+}
+
+/* minimal text back control */
+.back-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: color 120ms linear;
+}
+.back-btn:hover { color: var(--ink); }
+
+/* terminal-like io panel */
+.playground {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: calc(var(--grid) * 2);
+  font-family: var(--mono);
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid);
+}
+
+/* streamed output — preserve whitespace, wrap long lines */
+.playground-out {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: calc(var(--grid) * 12);
+}
+
+/* ── usage meter bar — segmented dot-matrix fill, accent when high ──
+   .meter itself is already defined above (LedgerMeter panel); reuse it. */
+.meter-bar {
+  height: calc(var(--grid) * 1.5);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  /* dot-matrix seams via repeating hard-edge stops (no gradient wash) */
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 5px,
+    var(--line) 5px,
+    var(--line) 6px
+  );
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  background: var(--chrome-2);
+  transition: width 200ms linear;
+}
+.meter-fill.high { background: var(--accent); }
+
+/* ── mercury sigil canvas mount — fixed box, centered ── */
+.sigil {
+  width: calc(var(--grid) * 16);
+  height: calc(var(--grid) * 16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.sigil canvas { display: block; max-width: 100%; max-height: 100%; }
+
+/* ── card footer — price + open affordance ── */
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: var(--grid);
+}
+.price { font-family: var(--mono); font-size: 12px; color: var(--chrome-3); }
+.card-open { color: var(--dim); opacity: 0; transition: opacity 200ms linear; }
+.card:hover .card-open { opacity: 1; color: var(--accent); border-color: var(--accent); }
+
+/* ── sandbox header/meta clusters ── */
+.sandbox-id { display: flex; align-items: center; gap: calc(var(--grid) * 1.5); }
+.sandbox-meta {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--grid) * 1.5);
+  margin: calc(var(--grid) * 1.5) 0;
+}
+
+/* ── playground input + action row ── */
+.playground-in {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: var(--grid);
+  resize: vertical;
+}
+.playground-in:focus { outline: none; border-color: var(--accent); }
+.playground-actions { display: flex; align-items: center; gap: calc(var(--grid) * 1.5); }
+
+/* ── quota bar — same segmented idiom as .meter-bar ── */
+.quota-bar {
+  height: calc(var(--grid) * 1.5);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 5px,
+    var(--line) 5px,
+    var(--line) 6px
+  );
+  overflow: hidden;
+}
+.quota-fill { height: 100%; background: var(--chrome-2); transition: width 200ms linear; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .card:hover { transform: none; }
+  .card-open { transition: none; }
+  .meter-fill { transition: none; }
+  .quota-fill { transition: none; }
+}

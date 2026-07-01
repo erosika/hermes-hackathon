@@ -1,6 +1,8 @@
-import type { LedgerEntry, Model } from "@hermetika/shared";
+import type { CheckoutSession, LedgerEntry, Model, Profile } from "@hermetika/shared";
 
 // thin client over the gateway's REST surface.
+
+export type { CheckoutSession };
 
 export interface LedgerView {
   float: number; // compute-credit wallet
@@ -23,9 +25,25 @@ async function getJson<T>(path: string): Promise<T> {
   return r.json() as Promise<T>;
 }
 
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const r = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`${path} → ${r.status}`);
+  return r.json() as Promise<T>;
+}
+
 export const getModels = () => getJson<Model[]>("/api/models");
+export const getModel = (slug: string) => getJson<Model>(`/api/models/${slug}`);
+export const getProfiles = () => getJson<Profile[]>("/api/profiles");
+export const getBackends = () => getJson<unknown>("/api/backends");
 export const getLedger = () => getJson<LedgerView>("/api/ledger");
 export const getSteward = () => getJson<StewardView>("/api/steward");
+
+// caller decides how to open the returned url (real Stripe url or demo stub).
+export const createCheckout = (slug: string) => postJson<CheckoutSession>("/api/checkout", { slug });
 
 // derive the serving lane from a model's backend_ref for honest labels.
 // gpu://spark → owned hot · gpu://sparktail → owned tail · gpu://brev → paid burst · proxy://x → proxied
