@@ -8,19 +8,34 @@ import { Sidebar } from "./Sidebar";
 import { Desktop, type WinState } from "./Desktop";
 import { StatusBar } from "./StatusBar";
 import { ShortcutsHelp } from "./ShortcutsHelp";
+import { SessionArchive } from "./SessionArchive";
 import { useWindowKeys } from "./useWindowKeys";
 import type { LayoutMode } from "./lib/TilingLayoutManager";
 
 const LAYOUTS: LayoutMode[] = ["tiled", "stacked", "monocle"];
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
+function useIsMobile() {
+  const [m, setM] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const on = () => setM(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return m;
+}
+
 export function App() {
+  const isMobile = useIsMobile();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [models, setModels] = useState<Model[]>([]);
   const [windows, setWindows] = useState<WinState[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("tiled");
   const [masterRatio, setMasterRatio] = useState(0.55);
   const [showHelp, setShowHelp] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const nextId = useRef(1);
 
   useEffect(() => {
@@ -107,7 +122,7 @@ export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <div className="shell">
+        <div className={`shell${drawerOpen ? " drawer-open" : ""}`}>
           <TopNav
             windows={windows}
             activeId={activeId}
@@ -117,13 +132,21 @@ export function App() {
             onClose={close}
             onReorder={reorder}
             onHelp={() => setShowHelp(true)}
+            onArchive={() => setShowArchive(true)}
+            onMenu={() => setDrawerOpen((v) => !v)}
           />
-          <Sidebar models={models} openSlugs={new Set(windows.map((w) => w.model.slug))} onOpen={openModel} />
+          <Sidebar
+            models={models}
+            openSlugs={new Set(windows.map((w) => w.model.slug))}
+            onOpen={(m) => { openModel(m); setDrawerOpen(false); }}
+            mobileOpen={drawerOpen}
+          />
+          {drawerOpen && <div className="drawer-backdrop" onClick={() => setDrawerOpen(false)} />}
           <Desktop
             windows={windows}
             models={models}
             activeId={activeId}
-            layoutMode={layoutMode}
+            layoutMode={isMobile ? "monocle" : layoutMode}
             masterRatio={masterRatio}
             onFocus={focus}
             onClose={close}
@@ -134,6 +157,7 @@ export function App() {
           <StatusBar />
         </div>
         {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
+        {showArchive && <SessionArchive onClose={() => setShowArchive(false)} />}
       </AuthProvider>
     </ThemeProvider>
   );

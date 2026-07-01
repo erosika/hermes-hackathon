@@ -638,3 +638,57 @@ body {
   .quota-fill, .sub-btn { transition: none; }
   .kbd-backdrop { backdrop-filter: none; }
 }
+
+/* ── mobile / responsive — sidebar becomes a drawer, windows forced to monocle (App) ── */
+.menu-btn {
+  display: none;
+  width: 34px; height: 30px;
+  align-items: center; justify-content: center;
+  background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  font-size: 15px; line-height: 1; cursor: pointer; flex: none;
+}
+.drawer-backdrop { display: none; }
+
+@media (max-width: 768px) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "topnav" "desktop" "status";
+  }
+  .menu-btn { display: inline-flex; }
+  .topnav { flex-wrap: wrap; height: auto; gap: var(--grid); padding: var(--grid); }
+  .topnav-brand { font-size: 18px; }
+  .tagline { display: none; }
+  .topnav-right { margin-left: auto; }
+  .topnav-right .seg { display: none; }            /* layout modes irrelevant — monocle forced */
+  .topnav-tabs { order: 5; flex-basis: 100%; }     /* window tabs get their own scroll row */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: min(86vw, 320px); z-index: 40;
+    transform: translateX(-100%); transition: transform 0.18s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .drawer-backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 35; }
+  .status-bar { flex-wrap: wrap; height: auto; gap: 2px 12px; padding: 6px var(--grid); }
+}
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+
+/* ── chat archive modal ── */
+.kbd-help.archive { width: min(680px, calc(100vw - 32px)); max-height: 80vh; display: flex; flex-direction: column; }
+.archive-list { overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: var(--grid); }
+.archive-item {
+  display: flex; flex-direction: column; gap: 3px; text-align: left;
+  padding: calc(var(--grid) * 1.25); background: var(--bg);
+  border: 1px solid transparent; border-radius: var(--radius); cursor: pointer;
+}
+.archive-item:hover { border-color: var(--accent); }
+.archive-item .name { font-size: 13px; color: var(--ink); }
+.archive-empty { padding: calc(var(--grid) * 3); text-align: center; }
+.archive-view { display: flex; flex-direction: column; gap: var(--grid); padding: var(--grid); overflow: hidden; }
+.archive-meta { color: var(--dim); }
+.archive-transcript { overflow-y: auto; display: flex; flex-direction: column; gap: var(--grid); }
+.archive-msg { display: flex; flex-direction: column; gap: 3px; }
+.archive-msg.user .archive-content { color: var(--dim); }
+.archive-content { font-family: var(--font-body); font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }

@@ -45,6 +45,26 @@ export const getModels = () => getJson<Model[]>("/api/models");
 export const getModel = (slug: string) => getJson<Model>(`/api/models/${slug}`);
 export const getProfiles = () => getJson<Profile[]>("/api/profiles");
 export const getBackends = () => getJson<unknown>("/api/backends");
+
+// chat transcripts (signed-in only; needs SUPABASE_SERVICE_KEY on the gateway to persist)
+export interface ChatSessionRow {
+  id: string;
+  user_email: string;
+  model_slug: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export interface ChatMessageRow {
+  id: string;
+  session_id: string;
+  role: string;
+  content: string;
+  tokens: number | null;
+  created_at: string;
+}
+export const getSessions = () => getJson<ChatSessionRow[]>("/api/sessions");
+export const getSession = (id: string) => getJson<{ session: ChatSessionRow; messages: ChatMessageRow[] }>(`/api/sessions/${id}`);
 export const getRevenue = () => getJson<RevenueView>("/api/revenue");
 export const getSubscriptions = () => getJson<Subscription[]>("/api/subscriptions");
 export const getSubscribe = () => getJson<SubscribeLink>("/api/subscribe");

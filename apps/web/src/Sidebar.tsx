@@ -7,11 +7,12 @@ interface SidebarProps {
   models: SModel[];
   openSlugs: Set<string>;
   onOpen: (model: Model) => void;
+  mobileOpen?: boolean;
 }
 
 const CATEGORY_ORDER = ["ascii", "art", "esoteric", "tech", "story", "puzzle", "wordplay", "music", "visual", "uncategorized"];
 
-export function Sidebar({ models, openSlugs, onOpen }: SidebarProps) {
+export function Sidebar({ models, openSlugs, onOpen, mobileOpen }: SidebarProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const toggle = (cat: string) =>
     setCollapsed((s) => { const n = new Set(s); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
@@ -29,7 +30,7 @@ export function Sidebar({ models, openSlugs, onOpen }: SidebarProps) {
   });
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${mobileOpen ? " mobile-open" : ""}`}>
       <div className="side-head">
         <span className="label">models</span>
         <span className="label">{models.length}</span>

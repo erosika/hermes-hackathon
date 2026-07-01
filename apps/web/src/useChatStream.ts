@@ -33,6 +33,9 @@ export function useChatStream(): UseChatStream {
     setOutput("");
     let acc = "";
 
+    // unique id per conversation so transcripts stay distinct (not merged under s_<model>).
+    if (!sessionId.current) sessionId.current = crypto.randomUUID();
+
     try {
       const res = await fetch(`${API_BASE}/v1/chat/completions`, {
         method: "POST",
@@ -41,7 +44,7 @@ export function useChatStream(): UseChatStream {
           model: modelSlug,
           messages,
           stream: true,
-          ...(sessionId.current ? { sessionId: sessionId.current } : {}),
+          sessionId: sessionId.current,
         }),
       });
 

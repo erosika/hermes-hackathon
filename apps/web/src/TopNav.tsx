@@ -53,14 +53,17 @@ interface TopNavProps {
   onClose: (id: number) => void;
   onReorder: (ids: number[]) => void;
   onHelp: () => void;
+  onArchive?: () => void;
+  onMenu?: () => void;
 }
 
-export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, onClose, onReorder, onHelp }: TopNavProps) {
+export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, onClose, onReorder, onHelp, onArchive, onMenu }: TopNavProps) {
   const { theme, setTheme } = useTheme();
   const ids = windows.map((w) => w.id);
 
   return (
     <nav className="topnav">
+      <button className="menu-btn" onClick={onMenu} title="models" aria-label="toggle models">☰</button>
       <div className="brandwrap">
         <span className="topnav-brand">☿ HERMETIKA</span>
         <span className="tagline">eri's atlas of models</span>
@@ -91,6 +94,7 @@ export function TopNav({ windows, activeId, layoutMode, onLayoutMode, onFocus, o
         <select className="pick" value={theme} onChange={(e) => setTheme(e.target.value as Theme)} title="theme">
           {THEMES.map((t) => <option key={t} value={t}>{THEME_LABEL[t]}</option>)}
         </select>
+        <button className="seg-btn" onClick={onArchive} title="chat archive">⌗</button>
         <button className="seg-btn" onClick={onHelp} title="keyboard shortcuts (?)">?</button>
         <AuthCluster />
       </div>
