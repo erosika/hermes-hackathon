@@ -38,6 +38,12 @@ export async function dispatch(model: Model, req: ChatRequest): Promise<{ res: R
   const { backend, upstreamModel } = resolved;
   if (!backend.baseUrl) throw new Error(`backend '${resolved.provider}' has no baseUrl`);
 
+  // inject the model's persona as a system message unless the client already set one.
+  const hasSystem = req.messages.some((m) => m.role === "system");
+  const messages = model.persona && !hasSystem
+    ? [{ role: "system" as const, content: model.persona }, ...req.messages]
+    : req.messages;
+
   const res = await fetch(`${backend.baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
@@ -46,7 +52,7 @@ export async function dispatch(model: Model, req: ChatRequest): Promise<{ res: R
     },
     body: JSON.stringify({
       model: upstreamModel,
-      messages: req.messages,
+      messages,
       stream: req.stream ?? false,
       stream_options: req.stream ? { include_usage: true } : undefined,
       max_tokens: req.maxTokens, // gateway-clamped output ceiling
