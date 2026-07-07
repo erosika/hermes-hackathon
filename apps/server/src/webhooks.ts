@@ -15,8 +15,8 @@ export interface StripeEventLike {
 export async function verifyAndParse(rawBody: string, signature?: string): Promise<StripeEventLike> {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   const stripe = stripeClient();
-  if (secret && stripe && signature) {
-    // throws on a bad signature — caller returns 400.
+  if (secret && stripe) {
+    if (!signature) throw new Error("missing stripe-signature"); // live mode never trusts unsigned bodies
     return (await stripe.webhooks.constructEventAsync(rawBody, signature, secret)) as unknown as StripeEventLike;
   }
   return JSON.parse(rawBody) as StripeEventLike; // demo mode — trust the body

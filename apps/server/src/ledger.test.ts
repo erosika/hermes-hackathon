@@ -1,7 +1,7 @@
 import { expect, test, describe, beforeEach } from "bun:test";
 import { recordIncome, incomeUsd, __resetLedgerForTest } from "./ledger";
 import { activateSubscription, mrrUsd, activeCount, isSubscribed, cancelSubscription, __resetSubsForTest } from "./subscriptions";
-import { handleStripeEvent, type StripeEventLike } from "./webhooks";
+import { handleStripeEvent, verifyAndParse, type StripeEventLike } from "./webhooks";
 import { subscribeUrl, PLAN } from "./billing";
 
 beforeEach(() => {
@@ -53,6 +53,21 @@ describe("stripe webhook → revenue", () => {
     expect(r.handled).toBe(false);
     expect(incomeUsd()).toBe(0);
     expect(activeCount()).toBe(0);
+  });
+});
+
+describe("stripe webhook verification", () => {
+  test("live mode rejects unsigned bodies", async () => {
+    process.env.STRIPE_SECRET_KEY = "sk_test_x";
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_x";
+    await expect(verifyAndParse('{"type":"checkout.session.completed"}', undefined)).rejects.toThrow("missing stripe-signature");
+  });
+
+  test("demo mode parses unsigned json", async () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.STRIPE_WEBHOOK_SECRET;
+    const evt = await verifyAndParse('{"type":"invoice.paid"}', undefined);
+    expect(evt.type).toBe("invoice.paid");
   });
 });
 
