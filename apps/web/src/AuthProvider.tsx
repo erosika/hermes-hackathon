@@ -8,6 +8,10 @@ interface Ctx {
   configured: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
+  recovery: boolean; // true when the user arrived via a password-recovery link
+  clearRecovery: () => void;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -18,6 +22,10 @@ const AuthCtx = createContext<Ctx>({
   configured: false,
   signIn: async () => {},
   signUp: async () => {},
+  resetPassword: async () => {},
+  updatePassword: async () => {},
+  recovery: false,
+  clearRecovery: () => {},
   signOut: async () => {},
   refresh: async () => {},
 });
@@ -25,6 +33,7 @@ const AuthCtx = createContext<Ctx>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [subscribed, setSubscribed] = useState(false);
+  const [recovery, setRecovery] = useState(false);
 
   const refresh = async () => {
     try {
@@ -40,9 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(data.session?.access_token ?? null);
       if (data.session) void refresh();
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setToken(session?.access_token ?? null);
       setEmail(session?.user?.email ?? null);
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
       if (session) void refresh();
       else setSubscribed(false);
     });
@@ -59,6 +69,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({ email: e, password });
     if (error) throw error;
   };
+  const resetPassword = async (e: string) => {
+    if (!supabase) throw new Error("auth not configured");
+    const { error } = await supabase.auth.resetPasswordForEmail(e, { redirectTo: window.location.origin });
+    if (error) throw error;
+  };
+  const updatePassword = async (password: string) => {
+    if (!supabase) throw new Error("auth not configured");
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    setRecovery(false);
+  };
   const signOut = async () => {
     await supabase?.auth.signOut();
     setToken(null);
@@ -67,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthCtx.Provider value={{ email, subscribed, configured: supabaseEnabled, signIn, signUp, signOut, refresh }}>
+    <AuthCtx.Provider value={{ email, subscribed, configured: supabaseEnabled, signIn, signUp, resetPassword, updatePassword, recovery, clearRecovery: () => setRecovery(false), signOut, refresh }}>
       {children}
     </AuthCtx.Provider>
   );

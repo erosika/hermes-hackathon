@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Model } from "@hermetika/shared";
 import { getModels } from "./api";
 import { ThemeProvider } from "./ThemeProvider";
-import { AuthProvider } from "./AuthProvider";
+import { AuthProvider, useAuth } from "./AuthProvider";
+import { SignInModal } from "./SignInModal";
 import { TopNav } from "./TopNav";
 import { Sidebar } from "./Sidebar";
 import { Desktop, type WinState } from "./Desktop";
@@ -13,6 +14,12 @@ import { useWindowKeys } from "./useWindowKeys";
 import type { LayoutMode } from "./lib/TilingLayoutManager";
 
 const LAYOUTS: LayoutMode[] = ["tiled", "stacked", "monocle"];
+
+// arrived via a password-recovery link → force the set-new-password prompt.
+function RecoveryGate() {
+  const { recovery, clearRecovery } = useAuth();
+  return recovery ? <SignInModal initialMode="reset" onClose={clearRecovery} /> : null;
+}
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
 function useIsMobile() {
@@ -158,6 +165,7 @@ export function App() {
         </div>
         {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
         {showArchive && <SessionArchive onClose={() => setShowArchive(false)} />}
+        <RecoveryGate />
       </AuthProvider>
     </ThemeProvider>
   );
