@@ -193,6 +193,8 @@ body {
 .signin-go { width: 100%; text-align: center; }
 .signin-err { color: var(--accent-rust); }
 .signin-sent { margin: 0; font-family: var(--font-body); font-size: 17px; line-height: 1.5; color: var(--accent-sage); }
+.signin-swap { background: none; border: none; padding: 0; cursor: pointer; color: var(--dim); text-align: center; }
+.signin-swap:hover { color: var(--ink); }
 .topnav-tabs { display: flex; gap: var(--grid); flex: 1; overflow-x: auto; }
 .tab {
   display: flex;

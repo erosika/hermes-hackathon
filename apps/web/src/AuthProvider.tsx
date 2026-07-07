@@ -6,7 +6,8 @@ interface Ctx {
   email: string | null;
   subscribed: boolean;
   configured: boolean;
-  signIn: (email: string) => Promise<void>; // sends a magic link / OTP
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -16,6 +17,7 @@ const AuthCtx = createContext<Ctx>({
   subscribed: false,
   configured: false,
   signIn: async () => {},
+  signUp: async () => {},
   signOut: async () => {},
   refresh: async () => {},
 });
@@ -47,9 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signIn = async (e: string) => {
+  const signIn = async (e: string, password: string) => {
     if (!supabase) throw new Error("auth not configured");
-    const { error } = await supabase.auth.signInWithOtp({ email: e, options: { emailRedirectTo: window.location.origin } });
+    const { error } = await supabase.auth.signInWithPassword({ email: e, password });
+    if (error) throw error;
+  };
+  const signUp = async (e: string, password: string) => {
+    if (!supabase) throw new Error("auth not configured");
+    const { error } = await supabase.auth.signUp({ email: e, password });
     if (error) throw error;
   };
   const signOut = async () => {
@@ -60,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthCtx.Provider value={{ email, subscribed, configured: supabaseEnabled, signIn, signOut, refresh }}>
+    <AuthCtx.Provider value={{ email, subscribed, configured: supabaseEnabled, signIn, signUp, signOut, refresh }}>
       {children}
     </AuthCtx.Provider>
   );
