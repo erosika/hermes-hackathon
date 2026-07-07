@@ -10,7 +10,7 @@ interface SidebarProps {
   mobileOpen?: boolean;
 }
 
-const CATEGORY_ORDER = ["ascii", "art", "esoteric", "tech", "story", "puzzle", "wordplay", "music", "visual", "uncategorized"];
+const CATEGORY_ORDER = ["ascii", "art", "esoteric", "philosophy", "tech", "story", "puzzle", "wordplay", "horror", "cursed", "music", "visual", "uncategorized"];
 
 export function Sidebar({ models, openSlugs, onOpen, mobileOpen }: SidebarProps) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());

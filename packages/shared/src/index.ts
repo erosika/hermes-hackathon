@@ -9,7 +9,10 @@ export type ModelKind =
   | "wordplay"
   | "story"
   | "music"
-  | "esoteric";
+  | "esoteric"
+  | "philosophy"
+  | "horror"
+  | "cursed";
 export type Backend = "gpu" | "proxy";
 
 // backend_ref grammar: "<gpu|proxy>://<provider>/<id>"  e.g. "gpu://brev/oracle-07"
