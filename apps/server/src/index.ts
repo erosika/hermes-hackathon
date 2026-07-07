@@ -44,6 +44,15 @@ const corsOrigin = process.env.CORS_ORIGIN
 const MAX_INPUT_CHARS = Number(process.env.MAX_INPUT_CHARS ?? 24000); // ~6k tokens
 const MAX_OUTPUT_TOKENS = Number(process.env.MAX_OUTPUT_TOKENS ?? 2048);
 
+// ops gate — endpoints that mutate the registry or expose subscriber data require an
+// x-gateway-key matching GATEWAY_KEYS (comma-sep). unset = open (bare dev / demo script).
+function opsAllowed(request: Request): boolean {
+  const keys = (process.env.GATEWAY_KEYS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (keys.length === 0) return true;
+  const k = request.headers.get("x-gateway-key");
+  return !!k && keys.includes(k);
+}
+
 const HF = "https://huggingface.co/";
 const withLinks = (m: Model) => ({
   ...m,
@@ -115,8 +124,14 @@ const app = new Elysia()
   })
 
   // subscription business — one plan, MRR + income log
-  .get("/api/revenue", () => ({ ...subscriptionSummary(), incomeTotal: incomeUsd(), entries: incomeEntries() }))
-  .get("/api/subscriptions", () => listSubscriptions())
+  .get("/api/revenue", ({ request, status }) => {
+    if (!opsAllowed(request)) return status(401, { error: "ops key required" });
+    return { ...subscriptionSummary(), incomeTotal: incomeUsd(), entries: incomeEntries() };
+  })
+  .get("/api/subscriptions", ({ request, status }) => {
+    if (!opsAllowed(request)) return status(401, { error: "ops key required" });
+    return listSubscriptions();
+  })
 
   // chat history — signed-in users' own transcripts (Supabase system-of-record)
   .get("/api/sessions", async ({ request, status }) => {
@@ -151,7 +166,8 @@ const app = new Elysia()
   })
 
   // demo checkout — opening the subscribe url books a Pantheon Pro sub for the signed-in email.
-  .get("/checkout/demo", async ({ query }) => {
+  .get("/checkout/demo", async ({ query, status }) => {
+    if (stripeClient()) return status(400, { error: "stripe is live — use checkout" });
     const price = Number(query.price ?? PLAN.priceUsd);
     const email = String(query.email ?? "demo@hermetika");
     const evt: StripeEventLike = {
@@ -164,7 +180,8 @@ const app = new Elysia()
   })
 
   // hermes ops — nudge admits models live
-  .post("/api/nudge", ({ body }) => {
+  .post("/api/nudge", ({ body, request, status }) => {
+    if (!opsAllowed(request)) return status(401, { error: "ops key required" });
     const results = nudge((body as { input: string }).input);
     return { summary: nudgeSummary(results), results };
   }, { body: t.Object({ input: t.String() }) })
