@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { type Model, type ChatMessage } from "@hermetika/shared";
 import { useChatStream } from "./useChatStream";
+import { useAuth } from "./AuthProvider";
 import { MercurySigil } from "./MercurySigil";
 
 const FREE_PER_MODEL = 5; // mirrors the gateway's FREE.perModel, for the quota bar
@@ -10,6 +11,7 @@ type FullModel = Model & { hfUrl?: string | null; resident?: boolean };
 
 export function SandboxWindow({ model }: { model: FullModel }) {
   const { output, streaming, error, remaining, pro, send, reset } = useChatStream();
+  const { subscribed } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -17,8 +19,10 @@ export function SandboxWindow({ model }: { model: FullModel }) {
   useEffect(() => { reset(); setMessages([]); }, [model.slug, reset]);
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, output]);
 
-  const spent = !pro && remaining === 0;
-  const pct = pro ? 100 : remaining == null ? 100 : (remaining / FREE_PER_MODEL) * 100;
+  // pro is known at page load via /api/auth/me — don't wait for the first response header to say so.
+  const isPro = pro || subscribed;
+  const spent = !isPro && remaining === 0;
+  const pct = remaining == null ? 100 : (remaining / FREE_PER_MODEL) * 100;
 
   const fire = async () => {
     const text = prompt.trim();
@@ -79,10 +83,14 @@ export function SandboxWindow({ model }: { model: FullModel }) {
           <button className="sub-btn" type="submit" disabled={streaming || spent}>
             {streaming ? "streaming…" : "run"}
           </button>
-          <div className="quota-bar" style={{ flex: 1 }}>
-            <div className={`quota-fill ${!pro && pct <= 20 ? "low" : ""}`} style={{ width: `${pct}%` }} />
-          </div>
-          <span className="label">{pro ? "unlimited" : `${remaining ?? FREE_PER_MODEL}/${FREE_PER_MODEL} free · this model`}</span>
+          {!isPro && (
+            <>
+              <div className="quota-bar" style={{ flex: 1 }}>
+                <div className={`quota-fill ${pct <= 20 ? "low" : ""}`} style={{ width: `${pct}%` }} />
+              </div>
+              <span className="label">{`${remaining ?? FREE_PER_MODEL}/${FREE_PER_MODEL} free · this model`}</span>
+            </>
+          )}
         </div>
       </form>
     </div>
