@@ -74,7 +74,8 @@ async function residentSlugs(): Promise<Set<string>> {
 }
 
 const app = new Elysia()
-  .use(cors({ origin: corsOrigin }))
+  // exposeHeaders: browsers can't read the x-hermetika-* response headers (quota ticker, session id) without this.
+  .use(cors({ origin: corsOrigin, exposeHeaders: ["x-hermetika-session", "x-hermetika-backend", "x-hermetika-tier", "x-hermetika-free-remaining", "x-hermetika-failover"] }))
   .get("/health", () => ({ ok: true, models: MODELS.length, profiles: PROFILES.length }))
 
   // registry
