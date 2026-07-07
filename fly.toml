@@ -1,7 +1,7 @@
 # Fly app for the Hermetika gateway → api.hermetika.io
 # deploy from repo root: `fly launch --no-deploy` (first time) then `fly deploy`
 app = "hermetika-gateway"
-primary_region = "sjc"
+primary_region = "ewr"
 
 [build]
   dockerfile = "apps/server/Dockerfile"
