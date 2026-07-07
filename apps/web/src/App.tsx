@@ -81,8 +81,11 @@ export function App() {
   // ── keyboard handlers ──
   const idx = () => windows.findIndex((w) => w.id === activeId);
   const cycleFocus = (dir: -1 | 1) => {
-    if (!windows.length) return;
-    const n = windows[(idx() + dir + windows.length) % windows.length];
+    // skip minimized windows — arrowing onto a collapsed bar shouldn't force-restore it (glitchy half-layout).
+    const open = windows.filter((w) => !w.isMinimized);
+    if (!open.length) return;
+    const cur = open.findIndex((w) => w.id === activeId);
+    const n = open[(cur + dir + open.length) % open.length];
     if (n) focus(n.id);
   };
   const moveActive = (dir: -1 | 1) =>
