@@ -548,6 +548,24 @@ export const MODELS: Model[] = [
     tags: ["music", "abc-notation", "composition"],
     enabled: true,
   },
+  {
+    id: "m_diffusion_gemma",
+    slug: "diffusion-gemma",
+    name: "Diffusion Gemma",
+    kind: "tech",
+    lineage: null,
+    backend: "gpu",
+    backendRef: "gpu://sparkdiff/diffusion-gemma",
+    speed: "fast",
+    hfId: "google/diffusiongemma-26B-A4B-it",
+    author: "google",
+    license: "gemma",
+    params: "26B-A4B",
+    releasedAt: "2026-06-10",
+    cardMd: "# Diffusion Gemma\nGoogle DeepMind's first open-weight text-diffusion LM — a 26B MoE (~3.8B active) that refines whole blocks of text in parallel instead of token-by-token. Served NVFP4 on vLLM, spark-1. The fastest model here, and the only diffusion architecture.",
+    tags: ["diffusion", "gemma", "experimental", "fast"],
+    enabled: true,
+  },
 ];
 
 // operator — one custom Hermes profile runs the pantheon (curate, watch, swap, notify).

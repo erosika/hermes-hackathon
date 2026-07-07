@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { MODELS, PROFILES } from "./seed";
-import { dispatch } from "./router";
+import { dispatch, parseRef } from "./router";
 import { getBackend } from "./backends";
 import { startHealthLoop, snapshot } from "./health";
 import { incomeEntries, incomeUsd, recordIncome } from "./ledger";
@@ -81,7 +81,15 @@ const app = new Elysia()
   // registry
   .get("/api/models", async () => {
     const resident = await residentSlugs();
-    const known = MODELS.filter((m) => m.enabled).map((m) => ({ ...withLinks(m), resident: resident.has(m.slug) }));
+    // vLLM-backed models (e.g. diffusion-gemma) aren't in Ollama /api/tags — treat them resident when their backend is healthy.
+    const health = snapshot();
+    const isResident = (m: Model) => {
+      if (resident.has(m.slug)) return true;
+      const { provider } = parseRef(m.backendRef);
+      const b = getBackend(provider);
+      return b?.runtime !== "ollama" && !!b?.baseUrl && health[provider]?.up === true;
+    };
+    const known = MODELS.filter((m) => m.enabled).map((m) => ({ ...withLinks(m), resident: isResident(m) }));
     const knownSlugs = new Set(MODELS.map((m) => m.slug));
     // auto-surface clean slugs present on the Sparks but not yet curated in the registry
     const extra = [...resident]
