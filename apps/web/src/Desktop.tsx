@@ -14,7 +14,6 @@ export interface WinState {
 
 interface DesktopProps {
   windows: WinState[];
-  models: Model[];
   activeId: number | null;
   layoutMode: LayoutMode;
   masterRatio: number;
@@ -22,10 +21,9 @@ interface DesktopProps {
   onClose: (id: number) => void;
   onMinimize: (id: number) => void;
   onMaximize: (id: number) => void;
-  onSwapModel: (id: number, model: Model) => void;
 }
 
-export function Desktop({ windows, models, activeId, layoutMode, masterRatio, onFocus, onClose, onMinimize, onMaximize, onSwapModel }: DesktopProps) {
+export function Desktop({ windows, activeId, layoutMode, masterRatio, onFocus, onClose, onMinimize, onMaximize }: DesktopProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const mgr = useMemo(() => new TilingLayoutManager({ topBarHeight: 0, gaps: { inner: 8, outer: 8 }, masterRatio }), [masterRatio]);
@@ -71,7 +69,7 @@ export function Desktop({ windows, models, activeId, layoutMode, masterRatio, on
               onMinimize={() => onMinimize(w.id)}
               onMaximize={() => onMaximize(w.id)}
             >
-              <SandboxWindow model={w.model} models={models} onSwap={(m) => onSwapModel(w.id, m)} />
+              <SandboxWindow model={w.model} />
             </Window>
           );
         })}

@@ -76,7 +76,6 @@ export function App() {
     });
   const minimize = (id: number) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, isMinimized: !w.isMinimized } : w)));
   const maximize = (id: number) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, isMaximized: !w.isMaximized, isMinimized: false } : w)));
-  const swapModel = (id: number, model: Model) => setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, model } : w)));
   const reorder = (ids: number[]) => setWindows((ws) => ids.map((i) => ws.find((w) => w.id === i)).filter((w): w is WinState => !!w));
 
   // ── keyboard handlers ──
@@ -151,7 +150,6 @@ export function App() {
           {drawerOpen && <div className="drawer-backdrop" onClick={() => setDrawerOpen(false)} />}
           <Desktop
             windows={windows}
-            models={models}
             activeId={activeId}
             layoutMode={isMobile ? "monocle" : layoutMode}
             masterRatio={masterRatio}
@@ -159,7 +157,6 @@ export function App() {
             onClose={close}
             onMinimize={minimize}
             onMaximize={maximize}
-            onSwapModel={swapModel}
           />
           <StatusBar onArchive={() => setShowArchive(true)} />
         </div>

@@ -442,10 +442,9 @@ body {
 .sbx-meta { display: flex; align-items: center; gap: calc(var(--grid) * 1.5); padding-bottom: var(--grid); border-bottom: 1px solid var(--line); }
 .sbx-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .sbx-model { font-family: var(--font-display); font-size: 25px; font-weight: 700; color: var(--chrome-2); margin: 0; line-height: 1.1; }
-.sbx-swap { margin-left: auto; max-width: 160px; }
 
-/* compact one-line metadata under the model name */
-.sbx-info { text-transform: none; letter-spacing: 0.02em; color: var(--dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* compact metadata under the model name — wraps rather than truncates */
+.sbx-info { text-transform: none; letter-spacing: 0.02em; color: var(--dim); font-size: 12px; }
 .sbx-info a { color: var(--accent); text-decoration: none; }
 .sbx-info a:hover { color: var(--chrome-3); }
 .sbx-info .dot { display: inline-block; width: 7px; height: 7px; border-radius: 999px; margin-right: 5px; vertical-align: middle; }
@@ -675,7 +674,6 @@ body {
   .sidebar.mobile-open { transform: translateX(0); }
   .drawer-backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 35; }
   .status-bar { flex-wrap: wrap; height: auto; gap: 2px 12px; padding: 6px var(--grid); }
-  .sbx-swap { display: none; }               /* pick models from the drawer on mobile */
 }
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
 

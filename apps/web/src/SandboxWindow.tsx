@@ -8,7 +8,7 @@ const FREE_PER_MODEL = 5; // mirrors the gateway's FREE.perModel, for the quota 
 // model carries extra fields the gateway attaches beyond the shared type.
 type FullModel = Model & { hfUrl?: string | null; resident?: boolean };
 
-export function SandboxWindow({ model, models, onSwap }: { model: FullModel; models: Model[]; onSwap: (m: Model) => void }) {
+export function SandboxWindow({ model }: { model: FullModel }) {
   const { output, streaming, error, remaining, pro, send, reset } = useChatStream();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
@@ -46,14 +46,6 @@ export function SandboxWindow({ model, models, onSwap }: { model: FullModel; mod
             {model.hfUrl && <> · <a href={model.hfUrl} target="_blank" rel="noopener noreferrer">hf ↗</a></>}
           </span>
         </div>
-        <select
-          className="pick sbx-swap"
-          value={model.slug}
-          onChange={(e) => { const m = models.find((x) => x.slug === e.target.value); if (m) onSwap(m); }}
-          title="swap model"
-        >
-          {models.map((m) => <option key={m.slug} value={m.slug}>{m.name}</option>)}
-        </select>
       </div>
 
       <div className="transcript" ref={scrollRef}>
