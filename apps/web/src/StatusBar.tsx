@@ -3,7 +3,7 @@ import { getSubscribe, subscribeDemo, type SubscribeLink } from "./api";
 import { useAuth } from "./AuthProvider";
 import { CreditsWidget } from "./CreditsWidget";
 
-export function StatusBar() {
+export function StatusBar({ onArchive }: { onArchive: () => void }) {
   const { email, subscribed, refresh } = useAuth();
   const [link, setLink] = useState<SubscribeLink | null>(null);
 
@@ -25,7 +25,7 @@ export function StatusBar() {
 
   return (
     <footer className="status-bar">
-      <span className="label">hermetika · operated by hermes</span>
+      <button className="label archive-open" onClick={onArchive} title="past sessions">⌗ past sessions</button>
       <span className="spacer" />
       {subscribed ? (
         <span className="badge pro">subscribed · unlimited</span>

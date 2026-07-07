@@ -154,7 +154,7 @@ export function App() {
             onMaximize={maximize}
             onSwapModel={swapModel}
           />
-          <StatusBar />
+          <StatusBar onArchive={() => setShowArchive(true)} />
         </div>
         {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
         {showArchive && <SessionArchive onClose={() => setShowArchive(false)} />}

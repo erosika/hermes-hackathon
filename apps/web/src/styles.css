@@ -682,6 +682,11 @@ body {
 /* ── chat archive modal ── */
 .kbd-help.archive { width: min(680px, calc(100vw - 32px)); max-height: 80vh; display: flex; flex-direction: column; }
 .archive-list { overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: var(--grid); }
+.archive-filters { display: flex; gap: calc(var(--grid) * 0.75); padding: var(--grid) var(--grid) 0; flex-wrap: wrap; }
+.archive-filters .pick { text-transform: none; letter-spacing: 0; font-size: 12px; }
+.archive-q { flex: 1; min-width: 140px; }
+.archive-open { background: none; border: none; padding: 0; cursor: pointer; color: var(--dim); }
+.archive-open:hover { color: var(--ink); }
 .archive-item {
   display: flex; flex-direction: column; gap: 3px; text-align: left;
   padding: calc(var(--grid) * 1.25); background: var(--bg);
