@@ -15,9 +15,17 @@ export function SandboxWindow({ model }: { model: FullModel }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pinned = useRef(true); // stick to bottom until the user scrolls up to read
 
-  useEffect(() => { reset(); setMessages([]); }, [model.slug, reset]);
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, output]);
+  useEffect(() => { reset(); setMessages([]); pinned.current = true; }, [model.slug, reset]);
+  useEffect(() => { if (pinned.current) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, output]);
+
+  // a scroll away from the bottom unpins; scrolling back to the bottom re-pins.
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  };
 
   // pro is known at page load via /api/auth/me — don't wait for the first response header to say so.
   const isPro = pro || subscribed;
@@ -28,6 +36,7 @@ export function SandboxWindow({ model }: { model: FullModel }) {
     const text = prompt.trim();
     if (!text || streaming || spent) return;
     const next: ChatMessage[] = [...messages, { role: "user", content: text }];
+    pinned.current = true; // re-pin on send so the new turn scrolls into view
     setMessages(next);
     setPrompt("");
     const reply = await send(model.slug, next);
@@ -52,7 +61,7 @@ export function SandboxWindow({ model }: { model: FullModel }) {
         </div>
       </div>
 
-      <div className="transcript" ref={scrollRef}>
+      <div className="transcript" ref={scrollRef} onScroll={onScroll}>
         {messages.length === 0 && !streaming && <div className="transcript-empty label">speak to the model — enter to send</div>}
         {messages.map((m, i) => (
           <div className={`msg ${m.role}`} key={i}>
