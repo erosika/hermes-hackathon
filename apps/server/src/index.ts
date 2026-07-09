@@ -206,9 +206,11 @@ const app = new Elysia()
       const session = newSession(req.sessionId ?? `s_${req.model}`);
       const lastUser = [...req.messages].reverse().find((m) => m.role === "user");
       // persist fire-and-forget — transcript storage must never block or break inference.
+      // chain the user-message insert after ensureSession so the session row exists first (FK).
       if (email) {
-        void ensureSession(session.id, email, model.slug, lastUser?.content.slice(0, 80)).catch(() => {});
-        if (lastUser) void appendMessages(session.id, [{ role: "user", content: lastUser.content }]).catch(() => {});
+        void ensureSession(session.id, email, model.slug, lastUser?.content.slice(0, 80))
+          .then(() => (lastUser ? appendMessages(session.id, [{ role: "user", content: lastUser.content }]) : undefined))
+          .catch(() => {});
       }
 
       try {
