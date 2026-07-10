@@ -1,15 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import type { Model } from "@hermetika/shared";
+import type { ChatMessage, Model } from "@hermetika/shared";
 import { TilingLayoutManager, type LayoutMode } from "./lib/TilingLayoutManager";
 import { Window } from "./Window";
 import { SandboxWindow } from "./SandboxWindow";
+
+// a saved session being reopened — sandbox seeds its transcript and continues the same id.
+export interface SessionResume {
+  sessionId: string;
+  title: string;
+  messages: ChatMessage[];
+}
 
 export interface WinState {
   id: number;
   model: Model;
   isMinimized: boolean;
   isMaximized: boolean;
+  resume?: SessionResume;
 }
 
 interface DesktopProps {
@@ -60,7 +68,7 @@ export function Desktop({ windows, activeId, layoutMode, masterRatio, onFocus, o
           return (
             <Window
               key={w.id}
-              title={w.model.name}
+              title={w.resume?.title ?? w.model.name}
               bounds={b}
               active={w.id === activeId}
               minimized={w.isMinimized}
@@ -69,7 +77,7 @@ export function Desktop({ windows, activeId, layoutMode, masterRatio, onFocus, o
               onMinimize={() => onMinimize(w.id)}
               onMaximize={() => onMaximize(w.id)}
             >
-              <SandboxWindow model={w.model} />
+              <SandboxWindow model={w.model} resume={w.resume} />
             </Window>
           );
         })}

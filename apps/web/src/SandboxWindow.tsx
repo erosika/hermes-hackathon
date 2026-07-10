@@ -3,14 +3,16 @@ import { type Model, type ChatMessage } from "@hermetika/shared";
 import { useChatStream } from "./useChatStream";
 import { useAuth } from "./AuthProvider";
 import { MercurySigil } from "./MercurySigil";
+import { Markdown } from "./Markdown";
+import type { SessionResume } from "./Desktop";
 
 const FREE_PER_MODEL = 5; // mirrors the gateway's FREE.perModel, for the quota bar
 
 // model carries extra fields the gateway attaches beyond the shared type.
 type FullModel = Model & { hfUrl?: string | null; resident?: boolean };
 
-export function SandboxWindow({ model }: { model: FullModel }) {
-  const { output, streaming, error, remaining, pro, send, reset } = useChatStream();
+export function SandboxWindow({ model, resume }: { model: FullModel; resume?: SessionResume }) {
+  const { output, streaming, error, remaining, pro, send, reset, adopt } = useChatStream();
   const { subscribed } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
@@ -18,6 +20,13 @@ export function SandboxWindow({ model }: { model: FullModel }) {
   const pinned = useRef(true); // stick to bottom until the user scrolls up to read
 
   useEffect(() => { reset(); setMessages([]); pinned.current = true; }, [model.slug, reset]);
+  // reopened session — seed the transcript and continue appending under the same id.
+  useEffect(() => {
+    if (!resume) return;
+    adopt(resume.sessionId);
+    setMessages(resume.messages);
+    pinned.current = true;
+  }, [resume, adopt]);
   useEffect(() => { if (pinned.current) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, output]);
 
   // a scroll away from the bottom unpins; scrolling back to the bottom re-pins.
@@ -66,13 +75,13 @@ export function SandboxWindow({ model }: { model: FullModel }) {
         {messages.map((m, i) => (
           <div className={`msg ${m.role}`} key={i}>
             <span className="msg-role label">{m.role === "user" ? "you" : model.name}</span>
-            <div className="msg-body">{m.content}</div>
+            <div className="msg-body">{m.role === "assistant" ? <Markdown text={m.content} /> : m.content}</div>
           </div>
         ))}
         {streaming && (
           <div className="msg assistant">
             <span className="msg-role label">{model.name}</span>
-            <div className="msg-body">{output || "…"}</div>
+            <div className="msg-body">{output ? <Markdown text={output} /> : "…"}</div>
           </div>
         )}
         {error && <div className="msg-error label">{error}</div>}

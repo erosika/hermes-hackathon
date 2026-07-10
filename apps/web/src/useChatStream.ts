@@ -15,6 +15,7 @@ export interface UseChatStream {
   pro: boolean;
   send: (modelSlug: string, messages: ChatMessage[]) => Promise<string>;
   reset: () => void;
+  adopt: (sessionId: string) => void; // continue a saved session — new turns append to it
 }
 
 export function useChatStream(): UseChatStream {
@@ -101,5 +102,11 @@ export function useChatStream(): UseChatStream {
     sessionId.current = null;
   }, []);
 
-  return { output, streaming, error, remaining, pro, send, reset };
+  const adopt = useCallback((id: string) => {
+    setOutput("");
+    setError(null);
+    sessionId.current = id;
+  }, []);
+
+  return { output, streaming, error, remaining, pro, send, reset, adopt };
 }

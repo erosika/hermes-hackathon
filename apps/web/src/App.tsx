@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from "./AuthProvider";
 import { SignInModal } from "./SignInModal";
 import { TopNav } from "./TopNav";
 import { Sidebar } from "./Sidebar";
-import { Desktop, type WinState } from "./Desktop";
+import { Desktop, type WinState, type SessionResume } from "./Desktop";
 import { StatusBar } from "./StatusBar";
 import { ShortcutsHelp } from "./ShortcutsHelp";
 import { SessionArchive } from "./SessionArchive";
@@ -52,16 +52,25 @@ export function App() {
     return () => clearInterval(id);
   }, []);
 
-  const openModel = (model: Model) => {
+  const openModel = (model: Model, resume?: SessionResume) => {
     const existing = windows.find((w) => w.model.slug === model.slug);
     if (existing) {
       setActiveId(existing.id);
-      setWindows((ws) => ws.map((w) => (w.id === existing.id ? { ...w, isMinimized: false } : w)));
+      setWindows((ws) => ws.map((w) => (w.id === existing.id ? { ...w, isMinimized: false, ...(resume ? { resume } : {}) } : w)));
       return;
     }
     const id = nextId.current++;
-    setWindows((ws) => [...ws, { id, model, isMinimized: false, isMaximized: false }]);
+    setWindows((ws) => [...ws, { id, model, isMinimized: false, isMaximized: false, resume }]);
     setActiveId(id);
+  };
+
+  // archive click — reopen the saved session in its model's sandbox; false = model gone, archive shows transcript.
+  const resumeSession = (modelSlug: string, resume: SessionResume): boolean => {
+    const model = models.find((m) => m.slug === modelSlug);
+    if (!model) return false;
+    openModel(model, resume);
+    setShowArchive(false);
+    return true;
   };
 
   const focus = (id: number) => {
@@ -164,7 +173,7 @@ export function App() {
           <StatusBar onArchive={() => setShowArchive(true)} />
         </div>
         {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
-        {showArchive && <SessionArchive onClose={() => setShowArchive(false)} />}
+        {showArchive && <SessionArchive onClose={() => setShowArchive(false)} onResume={resumeSession} />}
         <RecoveryGate />
       </AuthProvider>
     </ThemeProvider>
