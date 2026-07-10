@@ -1,9 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSessions, getSession, type ChatSessionRow, type ChatMessageRow } from "./api";
+import { Markdown } from "./Markdown";
+import type { SessionResume } from "./Desktop";
 
 type Detail = { session: ChatSessionRow; messages: ChatMessageRow[] };
 
-export function SessionArchive({ onClose }: { onClose: () => void }) {
+function downloadSession(d: Detail) {
+  const blob = new Blob([JSON.stringify(d, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `hermetika-${(d.session.title || d.session.id).slice(0, 40).replace(/[^\w-]+/g, "_")}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+interface Props {
+  onClose: () => void;
+  // reopen a session in its model's chat window; returns false if the model is gone.
+  onResume?: (modelSlug: string, resume: SessionResume) => boolean;
+}
+
+export function SessionArchive({ onClose, onResume }: Props) {
   const [sessions, setSessions] = useState<ChatSessionRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<Detail | null>(null);
@@ -45,13 +63,16 @@ export function SessionArchive({ onClose }: { onClose: () => void }) {
 
         {active ? (
           <div className="archive-view">
-            <button className="seg-btn" onClick={() => setActive(null)}>← sessions</button>
+            <div className="archive-view-bar">
+              <button className="seg-btn" onClick={() => setActive(null)}>← sessions</button>
+              <button className="seg-btn" onClick={() => downloadSession(active)} title="download transcript as json">json ↓</button>
+            </div>
             <div className="label archive-meta">{active.session.model_slug} · {new Date(active.session.updated_at).toLocaleString()}</div>
             <div className="archive-transcript">
               {active.messages.map((m) => (
                 <div key={m.id} className={`archive-msg ${m.role}`}>
                   <span className="label">{m.role}</span>
-                  <div className="archive-content">{m.content}</div>
+                  <div className="archive-content">{m.role === "assistant" ? <Markdown text={m.content} /> : m.content}</div>
                 </div>
               ))}
             </div>
@@ -84,10 +105,35 @@ export function SessionArchive({ onClose }: { onClose: () => void }) {
             ) : (
               <div className="archive-list">
                 {shown.map((s) => (
-                  <button key={s.id} className="archive-item" onClick={() => getSession(s.id).then(setActive).catch(() => {})}>
-                    <span className="name">{s.title || s.model_slug}</span>
-                    <span className="side-detail">{s.model_slug} · {new Date(s.updated_at).toLocaleDateString()}</span>
-                  </button>
+                  <div key={s.id} className="archive-row">
+                    <button
+                      className="archive-item"
+                      onClick={() =>
+                        getSession(s.id)
+                          .then((d) => {
+                            const resumed = onResume?.(d.session.model_slug, {
+                              sessionId: d.session.id,
+                              title: d.session.title || d.session.model_slug,
+                              messages: d.messages
+                                .filter((m) => m.role === "user" || m.role === "assistant")
+                                .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+                            });
+                            if (!resumed) setActive(d); // model retired — read-only transcript
+                          })
+                          .catch(() => {})
+                      }
+                    >
+                      <span className="name">{s.title || s.model_slug}</span>
+                      <span className="side-detail">{s.model_slug} · {new Date(s.updated_at).toLocaleDateString()}</span>
+                    </button>
+                    <button
+                      className="archive-export label"
+                      title="download transcript as json"
+                      onClick={() => getSession(s.id).then(downloadSession).catch(() => {})}
+                    >
+                      json ↓
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

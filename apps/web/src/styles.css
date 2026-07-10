@@ -699,3 +699,24 @@ body {
 .archive-msg { display: flex; flex-direction: column; gap: 3px; }
 .archive-msg.user .archive-content { color: var(--dim); }
 .archive-content { font-family: var(--font-body); font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.archive-row { display: flex; gap: 2px; align-items: stretch; }
+.archive-row .archive-item { flex: 1; min-width: 0; }
+.archive-export {
+  background: var(--bg); border: 1px solid transparent; border-radius: var(--radius);
+  padding: 0 calc(var(--grid) * 1.25); cursor: pointer; color: var(--dim); white-space: nowrap;
+}
+.archive-export:hover { border-color: var(--accent); color: var(--accent); }
+.archive-view-bar { display: flex; justify-content: space-between; align-items: center; }
+
+/* ── markdown in model output ── */
+.md-code {
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.45;
+  background: var(--panel); border: 1px solid var(--line);
+  padding: calc(var(--grid) * 1.25); margin: var(--grid) 0;
+  overflow-x: auto; white-space: pre; color: var(--ink);
+}
+.md-inline {
+  font-family: var(--mono); font-size: 0.9em;
+  background: var(--panel); border: 1px solid var(--line);
+  padding: 0 4px;
+}
