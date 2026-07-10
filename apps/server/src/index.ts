@@ -220,14 +220,15 @@ const app = new Elysia()
         if (!rl.allowed) return status(402, { error: rl.reason, upgrade: "/api/subscribe" });
         freeRemaining = rl.remaining;
       }
-      const session = newSession(req.sessionId ?? `s_${req.model}`);
+      // default id is per-user so bare API callers can't collide into a shared s_<model> session.
+      const session = newSession(req.sessionId ?? (id ? `s_${req.model}_${id.sub.slice(0, 8)}` : `s_${req.model}`));
       const lastUser = [...req.messages].reverse().find((m) => m.role === "user");
       // persist fire-and-forget — transcript storage must never block or break inference.
       // chain the user-message insert after ensureSession so the session row exists first (FK).
       if (email) {
         void ensureSession(session.id, email, model.slug, lastUser?.content.slice(0, 80))
-          .then(() => (lastUser ? appendMessages(session.id, [{ role: "user", content: lastUser.content }]) : undefined))
-          .catch(() => {});
+          .then(() => (lastUser ? appendMessages(session.id, email, [{ role: "user", content: lastUser.content }]) : undefined))
+          .catch((e) => console.error("chats: persist failed", e));
       }
 
       try {
@@ -255,7 +256,7 @@ const app = new Elysia()
               }
             },
             flush() {
-              if (email && assistant) void appendMessages(session.id, [{ role: "assistant", content: assistant }]).catch(() => {});
+              if (email && assistant) void appendMessages(session.id, email, [{ role: "assistant", content: assistant }]).catch(() => {});
             },
           });
           return new Response(res.body?.pipeThrough(persist), {
@@ -267,7 +268,7 @@ const app = new Elysia()
         const json = await res.json();
         const reply = json?.choices?.[0]?.message?.content;
         if (email && typeof reply === "string") {
-          void appendMessages(session.id, [{ role: "assistant", content: reply, tokens: json?.usage?.total_tokens }]).catch(() => {});
+          void appendMessages(session.id, email, [{ role: "assistant", content: reply, tokens: json?.usage?.total_tokens }]).catch(() => {});
         }
         return new Response(JSON.stringify(json), {
           status: res.status,

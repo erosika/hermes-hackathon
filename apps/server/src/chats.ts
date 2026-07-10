@@ -3,34 +3,49 @@
 import { getDb } from "./db";
 
 type Row = Record<string, unknown>;
-type Query = { upsert: Function; insert: Function; update: Function; select: Function };
+type Query = { insert: Function; update: Function; select: Function };
 const table = (db: unknown, name: string) => (db as { from(t: string): Query }).from(name);
 
 export async function ensureSession(id: string, userEmail: string, modelSlug: string, title?: string): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  await table(db, "chat_sessions").upsert(
-    { id, user_email: userEmail, model_slug: modelSlug, title: title ?? null, updated_at: new Date().toISOString() },
-    { onConflict: "id" },
-  );
+  try {
+    const { data: existing } = await table(db, "chat_sessions").select("user_email").eq("id", id).maybeSingle();
+    if (existing) {
+      if (existing.user_email !== userEmail) return; // someone else's session id — never reassign
+      await table(db, "chat_sessions").update({ updated_at: new Date().toISOString() }).eq("id", id);
+      return;
+    }
+    // title is set once at creation — the opening ask is the session's summary
+    await table(db, "chat_sessions").insert({ id, user_email: userEmail, model_slug: modelSlug, title: title ?? null });
+  } catch (e) {
+    console.error("chats: ensureSession failed", e);
+  }
 }
 
 export async function appendMessages(
   sessionId: string,
+  userEmail: string,
   msgs: { role: string; content: string; tokens?: number }[],
 ): Promise<void> {
   const db = await getDb();
   if (!db || msgs.length === 0) return;
-  const now = Date.now();
-  const rows: Row[] = msgs.map((m, i) => ({
-    id: `${sessionId}:${now}:${i}`,
-    session_id: sessionId,
-    role: m.role,
-    content: m.content,
-    tokens: m.tokens ?? null,
-  }));
-  await table(db, "chat_messages").insert(rows);
-  await table(db, "chat_sessions").update({ updated_at: new Date().toISOString() }).eq("id", sessionId);
+  try {
+    const { data: session } = await table(db, "chat_sessions").select("user_email").eq("id", sessionId).maybeSingle();
+    if (!session || session.user_email !== userEmail) return; // no writes into foreign or missing sessions
+    const now = Date.now();
+    const rows: Row[] = msgs.map((m, i) => ({
+      id: `${sessionId}:${now}:${i}`,
+      session_id: sessionId,
+      role: m.role,
+      content: m.content,
+      tokens: m.tokens ?? null,
+    }));
+    await table(db, "chat_messages").insert(rows);
+    await table(db, "chat_sessions").update({ updated_at: new Date().toISOString() }).eq("id", sessionId);
+  } catch (e) {
+    console.error("chats: appendMessages failed", e);
+  }
 }
 
 export async function listSessions(userEmail: string): Promise<Row[]> {
