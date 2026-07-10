@@ -19,9 +19,14 @@ function configured(): boolean {
 export async function getDb(): Promise<SupabaseClient | null> {
   if (cached !== undefined) return cached;
   if (!configured()) return (cached = null);
-  const pkg = "@supabase/supabase-js"; // variable specifier: optional dep, don't statically resolve
-  const mod = (await import(pkg)) as { createClient(u: string, k: string): SupabaseClient };
-  cached = mod.createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+  try {
+    const pkg = "@supabase/supabase-js"; // variable specifier: optional dep, don't statically resolve
+    const mod = (await import(pkg)) as { createClient(u: string, k: string): SupabaseClient };
+    cached = mod.createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+  } catch (e) {
+    console.error("db: supabase configured but sdk failed to load — persistence disabled", e);
+    cached = null;
+  }
   return cached;
 }
 

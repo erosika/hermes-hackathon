@@ -8,7 +8,7 @@
   "dependencies": {
     "@elysiajs/cors": "^1.1.1",
     "@hermetika/shared": "workspace:*",
-    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/supabase-js": "^2.110.0",
     "elysia": "^1.1.25",
     "stripe": "^22.3.0"
   }
