@@ -7,6 +7,25 @@ interface StreamDelta {
   choices?: { delta?: { content?: string } }[];
 }
 
+// keep sent input under the gateway's MAX_INPUT_CHARS (24000) so multi-turn chats don't 413.
+const INPUT_CHAR_BUDGET = 22000;
+
+// drop oldest turns until the total fits the budget; the newest message always survives
+// (even if it alone exceeds — the gateway then returns a clean 413 we surface to the user).
+function trimToBudget(messages: ChatMessage[], budget: number): ChatMessage[] {
+  const total = messages.reduce((n, m) => n + m.content.length, 0);
+  if (total <= budget) return messages;
+  const kept: ChatMessage[] = [];
+  let used = 0;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const len = messages[i]!.content.length;
+    if (kept.length > 0 && used + len > budget) break;
+    kept.unshift(messages[i]!);
+    used += len;
+  }
+  return kept;
+}
+
 export interface UseChatStream {
   output: string; // the in-flight assistant reply
   streaming: boolean;
@@ -37,13 +56,17 @@ export function useChatStream(): UseChatStream {
     // unique id per conversation so transcripts stay distinct (not merged under s_<model>).
     if (!sessionId.current) sessionId.current = crypto.randomUUID();
 
+    // trim old turns to a char budget under the gateway's cap so long chats don't 413.
+    // always keep the newest message; drop oldest first.
+    const trimmed = trimToBudget(messages, INPUT_CHAR_BUDGET);
+
     try {
       const res = await fetch(`${API_BASE}/v1/chat/completions`, {
         method: "POST",
         headers: { "content-type": "application/json", ...authHeader() },
         body: JSON.stringify({
           model: modelSlug,
-          messages,
+          messages: trimmed,
           stream: true,
           sessionId: sessionId.current,
         }),
@@ -52,6 +75,10 @@ export function useChatStream(): UseChatStream {
       if (res.status === 402) {
         setRemaining(0);
         setError("free limit reached for this model — subscribe for unlimited or try another");
+        return "";
+      }
+      if (res.status === 413) {
+        setError("that message is too long for this model — shorten it and try again");
         return "";
       }
       if (!res.ok) throw new Error(`/v1/chat/completions → ${res.status}`);
