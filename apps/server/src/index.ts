@@ -114,6 +114,16 @@ const app = new Elysia()
       .map((s) => ({ slug: s, name: s, kind: "uncategorized", resident: true, backend: "gpu", enabled: true }));
     return [...known, ...extra];
   })
+  // OpenAI-compatible model list — resident models only, so agent pickers show what can actually answer.
+  .get("/v1/models", async () => {
+    const resident = await residentSlugs();
+    const data = MODELS.filter((m) => m.enabled && isResident(m, resident)).map((m) => ({
+      id: m.slug,
+      object: "model",
+      owned_by: "hermetika",
+    }));
+    return { object: "list", data };
+  })
   .get("/api/models/:slug", async ({ params, status }) => {
     const m = MODELS.find((x) => x.slug === params.slug);
     if (!m) return status(404, { error: "model not found" });
@@ -221,9 +231,12 @@ const app = new Elysia()
       req.maxTokens = Math.min(req.maxTokens ?? MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS);
 
       // access gate — subscribers are unlimited; everyone else gets the free tier.
+      // GATEWAY_API_KEY bearer = owner's agents (hermes) — pro tier, no supabase account.
+      const bearer = request.headers.get("authorization")?.replace(/^Bearer /, "");
+      const keyPro = !!process.env.GATEWAY_API_KEY && bearer === process.env.GATEWAY_API_KEY;
       const id = await readIdentity(request);
       const email = id?.email ?? null;
-      const pro = email ? isSubscribed(email) : false;
+      const pro = keyPro || (email ? isSubscribed(email) : false);
       let freeRemaining: number = FREE.perModel;
       if (!pro) {
         const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
