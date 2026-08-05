@@ -218,6 +218,7 @@ const app = new Elysia()
     "/v1/chat/completions",
     async ({ body, status, request }) => {
       const req = body as ChatRequest;
+      req.maxTokens = req.maxTokens ?? (body as { max_tokens?: number }).max_tokens; // OpenAI snake_case alias
       const model = MODELS.find((m) => m.slug === req.model);
       if (!model) return status(404, { error: `unknown model '${req.model}'` });
       // down models refuse before the quota check — no free-tier burn, no hung stream.
@@ -226,7 +227,8 @@ const app = new Elysia()
       }
       const maxIn = model.maxInputChars ?? MAX_INPUT_CHARS;
       const maxOut = model.maxOutputTokens ?? MAX_OUTPUT_TOKENS;
-      const inputChars = req.messages.reduce((n, m) => n + m.content.length, 0);
+      // tool messages can carry null/array content — count only what's countable.
+      const inputChars = req.messages.reduce((n, m) => n + (typeof m.content === "string" ? m.content.length : 0), 0);
       if (inputChars > maxIn) {
         return status(413, { error: "input too large", max_input_chars: maxIn, got: inputChars });
       }
@@ -248,7 +250,7 @@ const app = new Elysia()
       }
       // default id is per-user so bare API callers can't collide into a shared s_<model> session.
       const session = newSession(req.sessionId ?? (id ? `s_${req.model}_${id.sub.slice(0, 8)}` : `s_${req.model}`));
-      const lastUser = [...req.messages].reverse().find((m) => m.role === "user");
+      const lastUser = [...req.messages].reverse().find((m) => m.role === "user" && typeof m.content === "string");
       // persist fire-and-forget — transcript storage must never block or break inference.
       // chain the user-message insert after ensureSession so the session row exists first (FK).
       if (email) {
@@ -305,12 +307,18 @@ const app = new Elysia()
       }
     },
     {
+      // messages stay loose: tool-calling agents send role "tool", null content, and tool_calls arrays.
       body: t.Object({
         model: t.String(),
-        messages: t.Array(t.Object({ role: t.String(), content: t.String() })),
+        messages: t.Array(t.Any()),
         stream: t.Optional(t.Boolean()),
         maxTokens: t.Optional(t.Number()),
+        max_tokens: t.Optional(t.Number()),
         sessionId: t.Optional(t.String()),
+        tools: t.Optional(t.Array(t.Any())),
+        tool_choice: t.Optional(t.Any()),
+        temperature: t.Optional(t.Number()),
+        top_p: t.Optional(t.Number()),
       }),
     },
   )

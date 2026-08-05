@@ -64,6 +64,11 @@ export interface ChatRequest {
   stream?: boolean;
   maxTokens?: number; // output cap; clamped to the gateway ceiling
   sessionId?: string; // honcho session for continuity across the deck
+  // OpenAI tool-calling + sampling passthrough — agents need these to reach the engine's parser untouched.
+  tools?: unknown[];
+  tool_choice?: unknown;
+  temperature?: number;
+  top_p?: number;
 }
 
 // subscription revenue log — one income row per Stripe payment.
