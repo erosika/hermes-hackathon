@@ -599,6 +599,8 @@ export const MODELS: Model[] = [
     releasedAt: "2026-07-30",
     cardMd: "# Inkling Small\nThinking Machines' multimodal MoE — 276B total, 12B active, 6-of-256 experts. The biggest brain here by an order of magnitude: served NVFP4 on SGLang, tensor-parallel across BOTH Sparks at once with a 1M-token context. When this one is awake, the rest of hermetika sleeps.",
     tags: ["moe", "multimodal", "1m-context", "dual-node"],
+    maxInputChars: 3_600_000, // ~900k tokens of the 1M window, leaving room for output
+    maxOutputTokens: 16384, // reasoning model — thinking alone can eat thousands
     enabled: true,
   },
 ];

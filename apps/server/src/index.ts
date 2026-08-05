@@ -224,11 +224,13 @@ const app = new Elysia()
       if (isDown(model, await residentSlugs())) {
         return status(503, { error: `☠ ${model.name} rests — its spark is occupied. back soon.` });
       }
+      const maxIn = model.maxInputChars ?? MAX_INPUT_CHARS;
+      const maxOut = model.maxOutputTokens ?? MAX_OUTPUT_TOKENS;
       const inputChars = req.messages.reduce((n, m) => n + m.content.length, 0);
-      if (inputChars > MAX_INPUT_CHARS) {
-        return status(413, { error: "input too large", max_input_chars: MAX_INPUT_CHARS, got: inputChars });
+      if (inputChars > maxIn) {
+        return status(413, { error: "input too large", max_input_chars: maxIn, got: inputChars });
       }
-      req.maxTokens = Math.min(req.maxTokens ?? MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS);
+      req.maxTokens = Math.min(req.maxTokens ?? maxOut, maxOut);
 
       // access gate — subscribers are unlimited; everyone else gets the free tier.
       // GATEWAY_API_KEY bearer = owner's agents (hermes) — pro tier, no supabase account.

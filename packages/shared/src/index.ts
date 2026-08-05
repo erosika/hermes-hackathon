@@ -37,6 +37,8 @@ export interface Model {
   license?: string; // SPDX id — the admission gate (apache-2.0, mit, ...); null/absent = unvetted
   priceUsd?: number; // monthly subscription price; falls back to PRICING.defaultMonthlyUsd
   persona?: string; // system prompt injected when the client sends none — steers weak finetunes into character
+  maxInputChars?: number; // per-model input gate; unset = gateway default (sized for small models)
+  maxOutputTokens?: number; // per-model output ceiling; unset = gateway default
 }
 
 export type ProfileRole = "orchestrator" | "curator" | "ops" | "steward";
