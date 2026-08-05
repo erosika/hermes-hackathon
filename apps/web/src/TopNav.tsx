@@ -41,6 +41,7 @@ const THEME_LABEL: Record<Theme, string> = {
   "sanzo-slate": "slate",
   "sanzo-forest": "forest",
   quartz: "quartz",
+  "sanzo-paper": "paper",
 };
 const MODES: LayoutMode[] = ["tiled", "stacked", "monocle"];
 

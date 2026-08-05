@@ -112,6 +112,22 @@
   --chrome-3: #d6f2e0;
 }
 
+/* sanzo-paper — the light adaptation: warm paper + vandyke ink + burnt orange (combo-book margins) */
+[data-theme="sanzo-paper"] {
+  --bg: #f4ecdc;
+  --panel: #ebdfc8;
+  --line: #cbb99a;
+  --ink: #43301c;        /* vandyke brown */
+  --dim: #8a7350;        /* maple, dimmed */
+  --accent: #c25b12;     /* burnt orange, paper-legible */
+  --accent-sage: #5d7a3a;/* olive, darkened for contrast */
+  --accent-rust: #b3341f;
+  --accent-clay: #8a6b3f;
+  --chrome-1: #cbb99a;
+  --chrome-2: #6b543a;
+  --chrome-3: #2b1f12;
+}
+
 /* quartz — refined near-black neutral (the retained quartz aesthetic) */
 [data-theme="quartz"] {
   --bg: #0a0b0d;
@@ -307,11 +323,12 @@ body {
 .side-detail .dot { width: 6px; height: 6px; border-radius: 999px; flex: none; }
 .side-detail .dot.on { background: var(--accent-sage); }
 .side-detail .dot.off { background: var(--dim); }
-.skull { font-family: "Noto Emoji", var(--mono); font-variant-emoji: text; color: var(--dim); line-height: 1; flex: none; }
-.side-item.down { opacity: 0.45; }
-.side-item.down .name { text-decoration: line-through; text-decoration-thickness: 1px; }
+.skull { font-family: "Noto Emoji", var(--mono); font-variant-emoji: text; color: var(--ink); line-height: 1; flex: none; }
+/* dim via color, not row opacity — so the skull keeps full strength beside the struck title */
+.side-item.down .name { color: var(--dim); text-decoration: line-through; text-decoration-thickness: 1px; }
+.side-item.down .side-detail, .side-item.down .side-hf { opacity: 0.6; }
 /* inline-block escapes the parent line-through, so the skull sits beside the struck title unstruck */
-.side-item.down .name .skull { display: inline-block; margin-left: 7px; font-size: 11px; vertical-align: baseline; }
+.side-item.down .name .skull { display: inline-block; margin-left: 7px; font-size: 12px; vertical-align: baseline; }
 .side-hf {
   display: flex; align-items: center; padding: 0 calc(var(--grid) * 1.25);
   color: var(--dim); text-decoration: none; font-size: 13px;
@@ -458,7 +475,7 @@ body {
 .sbx-info .skull { margin-right: 5px; }
 
 .down-panel { display: flex; align-items: center; gap: calc(var(--grid) * 2); padding: calc(var(--grid) * 2); border: 1px solid var(--line); background: var(--bg); flex: 0 0 auto; }
-.down-skull { font-family: "Noto Emoji", var(--mono); font-variant-emoji: text; font-size: 22px; color: var(--dim); line-height: 1; }
+.down-skull { font-family: "Noto Emoji", var(--mono); font-variant-emoji: text; font-size: 22px; color: var(--ink); line-height: 1; }
 .down-copy { display: flex; flex-direction: column; gap: 3px; color: var(--dim); }
 .down-copy p { margin: 0; }
 
