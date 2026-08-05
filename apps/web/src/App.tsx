@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Model } from "@hermetika/shared";
+
+type LiveModel = Model & { resident?: boolean };
 import { getModels } from "./api";
 import { ThemeProvider } from "./ThemeProvider";
 import { AuthProvider, useAuth } from "./AuthProvider";
@@ -36,7 +38,7 @@ function useIsMobile() {
 export function App() {
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [models, setModels] = useState<Model[]>([]);
+  const [models, setModels] = useState<LiveModel[]>([]);
   const [windows, setWindows] = useState<WinState[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("tiled");
@@ -120,6 +122,14 @@ export function App() {
   const adjustMaster = (d: number) => setMasterRatio((r) => Number(clamp(r + d, 0.2, 0.8).toFixed(2)));
   const focusInput = () => (document.querySelector(".win.active textarea") as HTMLElement | null)?.focus();
 
+  // windows snapshot their model at open time — refresh from the poll so residency stays live.
+  const liveWindows = windows.map((w) => {
+    const fresh = models.find((m) => m.slug === w.model.slug);
+    return fresh ? { ...w, model: fresh } : w;
+  });
+  const gpuModels = models.filter((m) => m.backend === "gpu");
+  const hermetikaDown = gpuModels.length > 0 && gpuModels.every((m) => m.resident === false);
+
   useWindowKeys({
     count: windows.length,
     activeId,
@@ -161,7 +171,7 @@ export function App() {
           />
           {drawerOpen && <div className="drawer-backdrop" onClick={() => setDrawerOpen(false)} />}
           <Desktop
-            windows={windows}
+            windows={liveWindows}
             activeId={activeId}
             layoutMode={isMobile ? "monocle" : layoutMode}
             masterRatio={masterRatio}
@@ -170,7 +180,7 @@ export function App() {
             onMinimize={minimize}
             onMaximize={maximize}
           />
-          <StatusBar onArchive={() => setShowArchive(true)} />
+          <StatusBar onArchive={() => setShowArchive(true)} hermetikaDown={hermetikaDown} />
         </div>
         {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
         {showArchive && <SessionArchive onClose={() => setShowArchive(false)} onResume={resumeSession} />}

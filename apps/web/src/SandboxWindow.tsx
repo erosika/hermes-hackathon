@@ -39,11 +39,12 @@ export function SandboxWindow({ model, resume }: { model: FullModel; resume?: Se
   // pro is known at page load via /api/auth/me — don't wait for the first response header to say so.
   const isPro = pro || subscribed;
   const spent = !isPro && remaining === 0;
+  const down = model.resident === false;
   const pct = remaining == null ? 100 : (remaining / FREE_PER_MODEL) * 100;
 
   const fire = async () => {
     const text = prompt.trim();
-    if (!text || streaming || spent) return;
+    if (!text || streaming || spent || down) return;
     const next: ChatMessage[] = [...messages, { role: "user", content: text }];
     pinned.current = true; // re-pin on send so the new turn scrolls into view
     setMessages(next);
@@ -63,7 +64,7 @@ export function SandboxWindow({ model, resume }: { model: FullModel; resume?: Se
         <div className="sbx-id">
           <h2 className="sbx-model">{model.name}</h2>
           <span className="sbx-info label">
-            {model.resident !== undefined && <span className={`dot ${model.resident ? "on" : "off"}`} />}
+            {model.resident !== undefined && (down ? <span className="skull" title="down">☠</span> : <span className="dot on" />)}
             {[model.params, model.author, model.license, model.kind, model.releasedAt].filter(Boolean).join(" · ")}
             {model.hfUrl && <> · <a href={model.hfUrl} target="_blank" rel="noopener noreferrer">hf ↗</a></>}
           </span>
@@ -87,6 +88,15 @@ export function SandboxWindow({ model, resume }: { model: FullModel; resume?: Se
         {error && <div className="msg-error label">{error}</div>}
       </div>
 
+      {down ? (
+        <div className="down-panel">
+          <span className="down-skull">☠</span>
+          <div className="down-copy label">
+            <p>resting — the spark that hosts this daemon is occupied.</p>
+            <p>it returns when the ritual concludes.</p>
+          </div>
+        </div>
+      ) : (
       <form className="playground" onSubmit={onSubmit}>
         <textarea
           className="playground-in"
@@ -111,6 +121,7 @@ export function SandboxWindow({ model, resume }: { model: FullModel; resume?: Se
           )}
         </div>
       </form>
+      )}
     </div>
   );
 }

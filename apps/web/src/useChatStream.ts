@@ -81,6 +81,11 @@ export function useChatStream(): UseChatStream {
         setError("that message is too long for this model — shorten it and try again");
         return "";
       }
+      if (res.status === 503) {
+        const j = (await res.json().catch(() => null)) as { error?: string } | null;
+        setError(j?.error ?? "model is down — try again later");
+        return "";
+      }
       if (!res.ok) throw new Error(`/v1/chat/completions → ${res.status}`);
       // reflect the server's per-model rate-limit verdict
       const tier = res.headers.get("x-hermetika-tier");

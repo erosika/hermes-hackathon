@@ -275,7 +275,7 @@ body {
 .badge.pro { color: var(--accent-sage); border-color: color-mix(in srgb, var(--accent-sage) 45%, transparent); }
 .badge.free { color: var(--dim); }
 
-/* ── sidebar (pantheon) ── */
+/* ── sidebar (model listing) ── */
 .sidebar {
   grid-area: sidebar;
   border-right: 1px solid var(--line);
@@ -307,6 +307,9 @@ body {
 .side-detail .dot { width: 6px; height: 6px; border-radius: 999px; flex: none; }
 .side-detail .dot.on { background: var(--accent-sage); }
 .side-detail .dot.off { background: var(--dim); }
+.skull { font-family: "Noto Emoji", var(--mono); font-variant-emoji: text; color: var(--dim); line-height: 1; flex: none; }
+.side-item.down { opacity: 0.45; }
+.side-item.down .name { text-decoration: line-through; text-decoration-thickness: 1px; }
 .side-hf {
   display: flex; align-items: center; padding: 0 calc(var(--grid) * 1.25);
   color: var(--dim); text-decoration: none; font-size: 13px;
@@ -450,6 +453,15 @@ body {
 .sbx-info .dot { display: inline-block; width: 7px; height: 7px; border-radius: 999px; margin-right: 5px; vertical-align: middle; }
 .sbx-info .dot.on { background: var(--accent-sage); }
 .sbx-info .dot.off { background: var(--dim); }
+.sbx-info .skull { margin-right: 5px; }
+
+.down-panel { display: flex; align-items: center; gap: calc(var(--grid) * 2); padding: calc(var(--grid) * 2); border: 1px solid var(--line); background: var(--bg); flex: 0 0 auto; }
+.down-skull { font-family: "Noto Emoji", var(--mono); font-variant-emoji: text; font-size: 22px; color: var(--dim); line-height: 1; }
+.down-copy { display: flex; flex-direction: column; gap: 3px; color: var(--dim); }
+.down-copy p { margin: 0; }
+
+.status-bar .hermetika-down { color: var(--dim); margin-left: calc(var(--grid) * 2); }
+.status-bar .hermetika-down .skull { margin-right: 5px; }
 
 /* multi-turn transcript — continuous terminal flow, no bubbles */
 .transcript {

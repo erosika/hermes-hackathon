@@ -82,6 +82,22 @@ async function residentSlugs(): Promise<Set<string>> {
   return names;
 }
 
+// vLLM-backed models (e.g. diffusion-gemma) aren't in Ollama /api/tags — treat them resident when their backend is healthy.
+function isResident(m: Model, resident: Set<string>): boolean {
+  if (resident.has(m.slug)) return true;
+  const { provider } = parseRef(m.backendRef);
+  const b = getBackend(provider);
+  return b?.runtime !== "ollama" && !!b?.baseUrl && snapshot()[provider]?.up === true;
+}
+
+// confirmed-down only — unknown health (pre-first-probe) is not refused; dispatch fails on its own.
+function isDown(m: Model, resident: Set<string>): boolean {
+  if (resident.has(m.slug)) return false;
+  const { provider } = parseRef(m.backendRef);
+  if (getBackend(provider)?.runtime === "ollama") return true;
+  return snapshot()[provider]?.up === false;
+}
+
 const app = new Elysia()
   // exposeHeaders: browsers can't read the x-hermetika-* response headers (quota ticker, session id) without this.
   .use(cors({ origin: corsOrigin, exposeHeaders: ["x-hermetika-session", "x-hermetika-backend", "x-hermetika-tier", "x-hermetika-free-remaining", "x-hermetika-failover"] }))
@@ -90,15 +106,7 @@ const app = new Elysia()
   // registry
   .get("/api/models", async () => {
     const resident = await residentSlugs();
-    // vLLM-backed models (e.g. diffusion-gemma) aren't in Ollama /api/tags — treat them resident when their backend is healthy.
-    const health = snapshot();
-    const isResident = (m: Model) => {
-      if (resident.has(m.slug)) return true;
-      const { provider } = parseRef(m.backendRef);
-      const b = getBackend(provider);
-      return b?.runtime !== "ollama" && !!b?.baseUrl && health[provider]?.up === true;
-    };
-    const known = MODELS.filter((m) => m.enabled).map((m) => ({ ...withLinks(m), resident: isResident(m) }));
+    const known = MODELS.filter((m) => m.enabled).map((m) => ({ ...withLinks(m), resident: isResident(m, resident) }));
     const knownSlugs = new Set(MODELS.map((m) => m.slug));
     // auto-surface clean slugs present on the Sparks but not yet curated in the registry
     const extra = [...resident]
@@ -109,8 +117,7 @@ const app = new Elysia()
   .get("/api/models/:slug", async ({ params, status }) => {
     const m = MODELS.find((x) => x.slug === params.slug);
     if (!m) return status(404, { error: "model not found" });
-    const resident = await residentSlugs();
-    return { ...withLinks(m), resident: resident.has(m.slug) };
+    return { ...withLinks(m), resident: isResident(m, await residentSlugs()) };
   })
 
   // hermes operators + backend health
@@ -203,6 +210,10 @@ const app = new Elysia()
       const req = body as ChatRequest;
       const model = MODELS.find((m) => m.slug === req.model);
       if (!model) return status(404, { error: `unknown model '${req.model}'` });
+      // down models refuse before the quota check — no free-tier burn, no hung stream.
+      if (isDown(model, await residentSlugs())) {
+        return status(503, { error: `☠ ${model.name} rests — its spark is occupied. return when the ritual concludes.` });
+      }
       const inputChars = req.messages.reduce((n, m) => n + m.content.length, 0);
       if (inputChars > MAX_INPUT_CHARS) {
         return status(413, { error: "input too large", max_input_chars: MAX_INPUT_CHARS, got: inputChars });

@@ -45,12 +45,13 @@ export function Sidebar({ models, openSlugs, onOpen, mobileOpen }: SidebarProps)
             </button>
             {isOpen && groups.get(cat)!.map((m) => {
               const detail = [m.params, m.author].filter(Boolean).join(" · ");
+              const down = m.resident === false;
               return (
-                <div key={m.id} className={`side-item ${openSlugs.has(m.slug) ? "open" : ""}`}>
+                <div key={m.id} className={`side-item ${openSlugs.has(m.slug) ? "open" : ""}${down ? " down" : ""}`}>
                   <button className="side-open" onClick={() => onOpen(m)}>
                     <span className="name">{m.name}</span>
                     <span className="side-detail">
-                      {m.resident !== undefined && <span className={`dot ${m.resident ? "on" : "off"}`} />}
+                      {m.resident !== undefined && (down ? <span className="skull" title="down">☠</span> : <span className="dot on" />)}
                       {detail || m.kind}
                     </span>
                   </button>
