@@ -4,7 +4,7 @@ import { authHeader } from "./supabase";
 import { API_BASE } from "./config";
 
 interface StreamDelta {
-  choices?: { delta?: { content?: string } }[];
+  choices?: { delta?: { content?: string; reasoning_content?: string } }[];
 }
 
 // keep sent input under the gateway's MAX_INPUT_CHARS (24000) so multi-turn chats don't 413.
@@ -113,7 +113,9 @@ export function useChatStream(): UseChatStream {
           if (payload === "[DONE]") continue;
           try {
             const chunk = JSON.parse(payload) as StreamDelta;
-            const token = chunk.choices?.[0]?.delta?.content;
+            // reasoning models (inkling) stream their thinking as reasoning_content — show it live.
+            const d = chunk.choices?.[0]?.delta;
+            const token = d?.content ?? d?.reasoning_content;
             if (token) { acc += token; setOutput(acc); }
           } catch {
             // skip keep-alives / non-JSON frames

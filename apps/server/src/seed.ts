@@ -583,6 +583,24 @@ export const MODELS: Model[] = [
     tags: ["diffusion", "gemma", "experimental", "fast"],
     enabled: true,
   },
+  {
+    id: "m_inkling_small",
+    slug: "inkling-small",
+    name: "Inkling Small",
+    kind: "tech",
+    lineage: null,
+    backend: "gpu",
+    backendRef: "gpu://sparkink/inkling-small",
+    speed: "standard",
+    hfId: "thinkingmachines/Inkling-Small-NVFP4",
+    author: "thinkingmachines",
+    license: "apache-2.0",
+    params: "276B-A12B",
+    releasedAt: "2026-07-30",
+    cardMd: "# Inkling Small\nThinking Machines' multimodal MoE — 276B total, 12B active, 6-of-256 experts. The biggest brain here by an order of magnitude: served NVFP4 on SGLang, tensor-parallel across BOTH Sparks at once with a 1M-token context. When this one is awake, the rest of hermetika sleeps.",
+    tags: ["moe", "multimodal", "1m-context", "dual-node"],
+    enabled: true,
+  },
 ];
 
 // operator — one custom Hermes profile runs the pantheon (curate, watch, swap, notify).

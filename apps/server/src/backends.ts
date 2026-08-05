@@ -21,6 +21,9 @@ export const BACKENDS: Record<string, Backend> = {
   sparktail: { baseUrl: env.SPARKTAIL_URL, runtime: "ollama", paid: false, apiKey: env.SPARKTAIL_TOKEN, failover: "spark" },
   // vLLM serving DiffusionGemma NVFP4 on spark-1 (its own port + Caddy route). no failover twin — single instance.
   sparkdiff: { baseUrl: env.SPARKDIFF_URL, runtime: "vllm", paid: false, apiKey: env.SPARKDIFF_TOKEN },
+  // SGLang serving Inkling-Small NVFP4 dual-node TP=2 across both Sparks (/inkling Caddy route on spark-1).
+  // mutually exclusive with the ollama lanes — spark-mode flips between them.
+  sparkink: { baseUrl: env.SPARKINK_URL, runtime: "vllm", paid: false, apiKey: env.SPARKINK_TOKEN ?? env.SPARK_TOKEN },
 };
 
 export function getBackend(provider: string): Backend | undefined {
