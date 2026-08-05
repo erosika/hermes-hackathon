@@ -222,7 +222,7 @@ const app = new Elysia()
       if (!model) return status(404, { error: `unknown model '${req.model}'` });
       // down models refuse before the quota check — no free-tier burn, no hung stream.
       if (isDown(model, await residentSlugs())) {
-        return status(503, { error: `☠ ${model.name} rests — its spark is occupied. return when the ritual concludes.` });
+        return status(503, { error: `☠ ${model.name} rests — its spark is occupied. back soon.` });
       }
       const inputChars = req.messages.reduce((n, m) => n + m.content.length, 0);
       if (inputChars > MAX_INPUT_CHARS) {

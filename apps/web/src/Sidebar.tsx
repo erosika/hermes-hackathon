@@ -49,9 +49,9 @@ export function Sidebar({ models, openSlugs, onOpen, mobileOpen }: SidebarProps)
               return (
                 <div key={m.id} className={`side-item ${openSlugs.has(m.slug) ? "open" : ""}${down ? " down" : ""}`}>
                   <button className="side-open" onClick={() => onOpen(m)}>
-                    <span className="name">{m.name}</span>
+                    <span className="name">{m.name}{down && <span className="skull" title="down">☠</span>}</span>
                     <span className="side-detail">
-                      {m.resident !== undefined && (down ? <span className="skull" title="down">☠</span> : <span className="dot on" />)}
+                      {m.resident !== undefined && !down && <span className="dot on" />}
                       {detail || m.kind}
                     </span>
                   </button>

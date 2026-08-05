@@ -93,7 +93,7 @@ export function SandboxWindow({ model, resume }: { model: FullModel; resume?: Se
           <span className="down-skull">☠</span>
           <div className="down-copy label">
             <p>resting — the spark that hosts this daemon is occupied.</p>
-            <p>it returns when the ritual concludes.</p>
+            <p>back soon.</p>
           </div>
         </div>
       ) : (

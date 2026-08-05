@@ -310,6 +310,8 @@ body {
 .skull { font-family: "Noto Emoji", var(--mono); font-variant-emoji: text; color: var(--dim); line-height: 1; flex: none; }
 .side-item.down { opacity: 0.45; }
 .side-item.down .name { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* inline-block escapes the parent line-through, so the skull sits beside the struck title unstruck */
+.side-item.down .name .skull { display: inline-block; margin-left: 7px; font-size: 11px; vertical-align: baseline; }
 .side-hf {
   display: flex; align-items: center; padding: 0 calc(var(--grid) * 1.25);
   color: var(--dim); text-decoration: none; font-size: 13px;
